@@ -1,0 +1,19 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="outerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#d1d5db"/>
+      <stop offset="100%" stop-color="#6b7280"/>
+    </linearGradient>
+    <linearGradient id="innerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f3f4f6"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer rounded rectangle -->
+  <rect x="0" y="0" width="32" height="32" rx="6" fill="url(#outerGrad)"/>
+  <!-- Inner rounded rectangle -->
+  <rect x="3" y="3" width="26" height="26" rx="4" fill="url(#innerGrad)"/>
+  <!-- AK text -->
+  <text x="16" y="21" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#1f2937">AK</text>
+</svg>
