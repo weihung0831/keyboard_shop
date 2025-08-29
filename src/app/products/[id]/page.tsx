@@ -59,8 +59,15 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             className='space-y-4'
           >
             {/* Main Image */}
-            <div className='relative aspect-square overflow-hidden rounded-xl bg-zinc-800 shadow-lg border border-zinc-600'>
-              <Image src={product.image} alt={product.name} fill className='object-cover' />
+            <div className='relative aspect-[4/3] overflow-hidden rounded-xl bg-zinc-900 shadow-lg border border-zinc-600 p-4'>
+              <Image
+                src={product.image}
+                alt={product.name}
+                fill
+                className='object-contain'
+                sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw'
+                priority
+              />
               {/* Stock Status Badge */}
               <div className='absolute top-4 right-4'>
                 {product.inStock ? (
