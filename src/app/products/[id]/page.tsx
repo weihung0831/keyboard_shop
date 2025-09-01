@@ -3,11 +3,11 @@
 import { use } from 'react';
 import { useRouter } from 'next/navigation';
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import type { Product } from '@/types/product';
 import productsData from '@/data/products.json';
 import { cn } from '@/lib/utils';
+import Product3DViewer from '@/components/ui/product-3d-viewer';
 
 interface ProductDetailPageProps {
   params: Promise<{
@@ -58,22 +58,12 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             animate={{ opacity: 1, x: 0 }}
             className='space-y-4'
           >
-            {/* Main Image */}
-            <div className='relative aspect-square overflow-hidden rounded-xl bg-zinc-800 shadow-lg border border-zinc-600'>
-              <Image src={product.image} alt={product.name} fill className='object-cover' />
-              {/* Stock Status Badge */}
-              <div className='absolute top-4 right-4'>
-                {product.inStock ? (
-                  <span className='rounded-full bg-green-500/80 px-3 py-1 text-sm font-medium text-white border border-green-400'>
-                    現貨供應
-                  </span>
-                ) : (
-                  <span className='rounded-full bg-red-500/80 px-3 py-1 text-sm font-medium text-white border border-red-400'>
-                    暫時缺貨
-                  </span>
-                )}
-              </div>
-            </div>
+            {/* 3D 產品查看器 */}
+            <Product3DViewer
+              imageSrc={product.image}
+              imageAlt={product.name}
+              inStock={product.inStock}
+            />
           </motion.div>
 
           {/* Product Info */}
