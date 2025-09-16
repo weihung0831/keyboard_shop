@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import type { Product } from '@/types/product';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { IconShoppingCart } from '@tabler/icons-react';
+import { useCart } from '@/contexts/CartContext';
 
 export interface ProductCardProps {
   product: Product;
@@ -11,6 +13,25 @@ export interface ProductCardProps {
 }
 
 export const ProductCard = ({ product, onClick }: ProductCardProps) => {
+  const { addToCart } = useCart();
+
+  /**
+   * 處理加入購物車按鈕點擊事件
+   */
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation(); // 防止觸發卡片點擊事件
+    addToCart(product, 1);
+  };
+
+  /**
+   * 處理卡片點擊事件
+   */
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick();
+    }
+  };
+
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
@@ -18,9 +39,9 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
       className={cn(
         'group relative cursor-pointer rounded-xl border border-zinc-600 bg-zinc-900/90 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:border-zinc-500',
         'hover:shadow-blue-500/10',
-        'h-[480px] flex flex-col', // Fixed height with flex layout
+        'h-[520px] flex flex-col', // Fixed height with flex layout (increased for button)
       )}
-      onClick={onClick}
+      onClick={handleCardClick}
     >
       {/* Product Image - Fixed height */}
       <div className='relative h-48 overflow-hidden rounded-t-xl bg-zinc-800 flex-shrink-0'>
@@ -99,7 +120,7 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
         {/* Spacer to push price to bottom */}
         <div className='flex-grow'></div>
 
-        {/* Price and Wireless - Fixed at bottom */}
+        {/* Price and Action Button - Fixed at bottom */}
         <div className='flex items-center justify-between mt-auto'>
           <div className='text-xl font-bold text-blue-400'>
             NT$ {product.price.toLocaleString()}
@@ -122,6 +143,28 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
               無線
             </div>
           )}
+        </div>
+
+        {/* Add to Cart Button */}
+        <div className='mt-4'>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleAddToCart}
+            disabled={!product.inStock}
+            className={cn(
+              'flex w-full items-center justify-center space-x-2 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50',
+              product.inStock
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-blue-500/25 hover:from-blue-500 hover:to-purple-500'
+                : 'bg-zinc-700 text-zinc-400 cursor-not-allowed shadow-none',
+            )}
+            aria-label={
+              product.inStock ? `加入 ${product.name} 到購物車` : `${product.name} 目前缺貨`
+            }
+          >
+            <IconShoppingCart className='h-4 w-4' />
+            <span>{product.inStock ? '加入購物車' : '缺貨'}</span>
+          </motion.button>
         </div>
       </div>
 

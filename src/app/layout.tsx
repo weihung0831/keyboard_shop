@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { SimpleNavbarWithHoverEffects } from '@/components/ui/Navbar';
 import { SimpleFooterWithFourGrids } from '@/components/ui/Footer';
+import { CartProvider } from '@/contexts/CartContext';
+import { CartSidebar } from '@/components/ui/cart-sidebar';
+import { CartNotifications } from '@/components/ui/cart-notifications';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -33,11 +36,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='en' className='dark'>
+    <html lang='zh-TW' className='dark'>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <SimpleNavbarWithHoverEffects />
-        {children}
-        <SimpleFooterWithFourGrids />
+        <CartProvider>
+          <SimpleNavbarWithHoverEffects />
+          {children}
+          <SimpleFooterWithFourGrids />
+          <CartSidebar />
+          <CartNotifications />
+        </CartProvider>
       </body>
     </html>
   );

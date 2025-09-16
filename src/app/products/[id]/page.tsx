@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -8,6 +8,8 @@ import type { Product } from '@/types/product';
 import productsData from '@/data/products.json';
 import { cn } from '@/lib/utils';
 import Product3DViewer from '@/components/ui/product-3d-viewer';
+import { useCart } from '@/contexts/CartContext';
+import { IconShoppingCart, IconPlus, IconMinus, IconHeart } from '@tabler/icons-react';
 
 interface ProductDetailPageProps {
   params: Promise<{
@@ -18,6 +20,10 @@ interface ProductDetailPageProps {
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
+  const { addToCart } = useCart();
+
+  // 數量狀態管理
+  const [quantity, setQuantity] = useState(1);
 
   const products = productsData as Product[];
   const product = products.find(p => p.id === parseInt(resolvedParams.id));
@@ -28,6 +34,45 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
   const handleBackClick = () => {
     router.push('/products');
+  };
+
+  /**
+   * 增加數量
+   */
+  const increaseQuantity = () => {
+    setQuantity(prev => Math.min(prev + 1, 99)); // 最大99個
+  };
+
+  /**
+   * 減少數量
+   */
+  const decreaseQuantity = () => {
+    setQuantity(prev => Math.max(prev - 1, 1)); // 最小1個
+  };
+
+  /**
+   * 直接設置數量
+   */
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 1 && value <= 99) {
+      setQuantity(value);
+    }
+  };
+
+  /**
+   * 加入購物車
+   */
+  const handleAddToCart = () => {
+    addToCart(product, quantity);
+  };
+
+  /**
+   * 立即購買
+   */
+  const handleBuyNow = () => {
+    addToCart(product, quantity);
+    // TODO: 跳轉到結帳頁面
   };
 
   return (
@@ -145,23 +190,108 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               </div>
             </div>
 
+            {/* 數量選擇 */}
+            <div className='space-y-3'>
+              <h4 className='text-lg font-medium text-white'>選擇數量</h4>
+              <div className='flex items-center space-x-4'>
+                <div className='flex items-center rounded-lg border border-zinc-600 bg-zinc-800'>
+                  <button
+                    onClick={decreaseQuantity}
+                    disabled={!product.inStock || quantity <= 1}
+                    className={cn(
+                      'flex h-12 w-12 items-center justify-center transition-colors',
+                      product.inStock && quantity > 1
+                        ? 'text-zinc-200 hover:text-white hover:bg-zinc-700'
+                        : 'text-zinc-500 cursor-not-allowed',
+                    )}
+                    aria-label='減少數量'
+                  >
+                    <IconMinus className='h-4 w-4' />
+                  </button>
+
+                  <input
+                    type='number'
+                    value={quantity}
+                    onChange={handleQuantityChange}
+                    min='1'
+                    max='99'
+                    disabled={!product.inStock}
+                    className={cn(
+                      'w-16 bg-transparent text-center text-lg font-medium text-white border-none focus:outline-none',
+                      !product.inStock && 'text-zinc-500',
+                    )}
+                  />
+
+                  <button
+                    onClick={increaseQuantity}
+                    disabled={!product.inStock || quantity >= 99}
+                    className={cn(
+                      'flex h-12 w-12 items-center justify-center transition-colors',
+                      product.inStock && quantity < 99
+                        ? 'text-zinc-200 hover:text-white hover:bg-zinc-700'
+                        : 'text-zinc-500 cursor-not-allowed',
+                    )}
+                    aria-label='增加數量'
+                  >
+                    <IconPlus className='h-4 w-4' />
+                  </button>
+                </div>
+
+                {/* 總價顯示 */}
+                <div className='flex-1'>
+                  <div className='text-sm text-zinc-400'>小計</div>
+                  <div className='text-2xl font-bold text-blue-400'>
+                    NT$ {(product.price * quantity).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Action Buttons */}
-            <div className='space-y-4'>
-              <button
+            <div className='space-y-3'>
+              {/* 立即購買 */}
+              <motion.button
+                whileHover={{ scale: product.inStock ? 1.02 : 1 }}
+                whileTap={{ scale: product.inStock ? 0.98 : 1 }}
+                onClick={handleBuyNow}
                 disabled={!product.inStock}
                 className={cn(
-                  'w-full rounded-lg px-6 py-3 text-lg font-semibold transition-all duration-200',
+                  'flex w-full items-center justify-center space-x-2 rounded-lg px-6 py-4 text-lg font-semibold transition-all duration-200',
                   product.inStock
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg'
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-lg hover:shadow-blue-500/25'
                     : 'bg-zinc-700 text-zinc-400 cursor-not-allowed border border-zinc-600',
                 )}
               >
-                {product.inStock ? '立即購買' : '暫時缺貨'}
-              </button>
+                <IconShoppingCart className='h-5 w-5' />
+                <span>{product.inStock ? '立即購買' : '暫時缺貨'}</span>
+              </motion.button>
 
-              <button className='w-full rounded-lg border border-zinc-600 px-6 py-3 text-lg font-semibold text-zinc-300 transition-all duration-200 hover:bg-zinc-800 shadow-lg'>
-                加入願望清單
-              </button>
+              {/* 加入購物車 */}
+              <motion.button
+                whileHover={{ scale: product.inStock ? 1.02 : 1 }}
+                whileTap={{ scale: product.inStock ? 0.98 : 1 }}
+                onClick={handleAddToCart}
+                disabled={!product.inStock}
+                className={cn(
+                  'flex w-full items-center justify-center space-x-2 rounded-lg border px-6 py-4 text-lg font-semibold transition-all duration-200',
+                  product.inStock
+                    ? 'border-zinc-600 bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-zinc-500/50 shadow-lg'
+                    : 'border-zinc-700 bg-zinc-800 text-zinc-500 cursor-not-allowed',
+                )}
+              >
+                <IconShoppingCart className='h-5 w-5' />
+                <span>{product.inStock ? '加入購物車' : '缺貨中'}</span>
+              </motion.button>
+
+              {/* 加入願望清單 */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className='flex w-full items-center justify-center space-x-2 rounded-lg border border-zinc-600 bg-transparent px-6 py-3 text-base font-medium text-zinc-300 transition-all duration-200 hover:bg-zinc-800 hover:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500/50'
+              >
+                <IconHeart className='h-5 w-5' />
+                <span>加入願望清單</span>
+              </motion.button>
             </div>
 
             {/* Additional Info */}

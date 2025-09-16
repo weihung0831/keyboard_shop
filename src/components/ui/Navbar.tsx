@@ -4,6 +4,7 @@ import { IconMenu2, IconX, IconShoppingCart, IconUser, IconSearch } from '@table
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import React, { useState } from 'react';
+import { useCart } from '@/contexts/CartContext';
 
 export function SimpleNavbarWithHoverEffects() {
   return <Navbar />;
@@ -27,6 +28,7 @@ const Navbar = () => {
 
 const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }) => {
   const [hovered, setHovered] = useState<number | null>(null);
+  const { totalItems, toggleCart } = useCart();
   return (
     <motion.div
       onMouseLeave={() => {
@@ -63,11 +65,21 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
         <button className='flex h-10 w-10 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'>
           <IconUser size={24} />
         </button>
-        <button className='relative flex h-10 w-10 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'>
+        <button
+          onClick={toggleCart}
+          className='relative flex h-10 w-10 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'
+          aria-label={`購物車，目前有 ${totalItems} 個商品`}
+        >
           <IconShoppingCart size={24} />
-          <span className='absolute -top-1 -right-1 h-6 w-6 rounded-full bg-red-500 text-sm text-white flex items-center justify-center'>
-            0
-          </span>
+          {totalItems > 0 && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className='absolute -top-1 -right-1 h-6 w-6 rounded-full bg-red-500 text-sm text-white flex items-center justify-center font-medium shadow-lg'
+            >
+              {totalItems > 99 ? '99+' : totalItems}
+            </motion.span>
+          )}
         </button>
       </div>
     </motion.div>
@@ -76,6 +88,7 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
 
 const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] }) => {
   const [open, setOpen] = useState(false);
+  const { totalItems, toggleCart } = useCart();
 
   return (
     <>
@@ -92,11 +105,21 @@ const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] })
             <button className='flex h-9 w-9 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'>
               <IconUser size={22} />
             </button>
-            <button className='relative flex h-9 w-9 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'>
+            <button
+              onClick={toggleCart}
+              className='relative flex h-9 w-9 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'
+              aria-label={`購物車，目前有 ${totalItems} 個商品`}
+            >
               <IconShoppingCart size={22} />
-              <span className='absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-sm text-white flex items-center justify-center'>
-                0
-              </span>
+              {totalItems > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className='absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-xs text-white flex items-center justify-center font-medium shadow-lg'
+                >
+                  {totalItems > 99 ? '99+' : totalItems}
+                </motion.span>
+              )}
             </button>
             {/* 行動版選單開關按鈕，根據開啟狀態顯示X或漢堡圖示 */}
             {open ? (
