@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   IconX,
@@ -134,6 +135,7 @@ function EmptyCart() {
  * 購物車側邊欄元件
  */
 export function CartSidebar() {
+  const router = useRouter();
   const {
     items,
     isOpen,
@@ -144,6 +146,11 @@ export function CartSidebar() {
     removeFromCart,
     clearCart,
   } = useCart();
+
+  const handleCheckout = () => {
+    router.push('/checkout');
+    closeCart();
+  };
 
   return (
     <AnimatePresence>
@@ -231,6 +238,7 @@ export function CartSidebar() {
 
                     {/* 結帳按鈕 */}
                     <button
+                      onClick={handleCheckout}
                       className={cn(
                         'flex w-full items-center justify-center space-x-2 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200',
                         items.length > 0

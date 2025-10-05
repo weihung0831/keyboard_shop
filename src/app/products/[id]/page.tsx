@@ -72,7 +72,8 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
    */
   const handleBuyNow = () => {
     addToCart(product, quantity);
-    // TODO: 跳轉到結帳頁面
+    // 跳轉到結帳頁面
+    router.push('/checkout');
   };
 
   return (
