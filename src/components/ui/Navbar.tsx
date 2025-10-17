@@ -3,10 +3,12 @@ import { cn } from '@/lib/utils';
 import { IconMenu2, IconX, IconShoppingCart, IconUser, IconSearch } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import type { Product } from '@/types/product';
+import productsData from '@/data/products.json';
 
 export function SimpleNavbarWithHoverEffects() {
   return <Navbar />;
@@ -31,6 +33,10 @@ const Navbar = () => {
 const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }) => {
   const [hovered, setHovered] = useState<number | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const searchRef = useRef<HTMLDivElement>(null);
   const { totalItems, toggleCart } = useCart();
   const { isAuthenticated, currentUser, logout } = useAuth();
   const router = useRouter();
@@ -47,6 +53,56 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
     logout();
     setShowUserMenu(false);
     router.push('/');
+  };
+
+  // 搜尋功能
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setSearchResults([]);
+      return;
+    }
+
+    const products = productsData as Product[];
+    const filtered = products.filter(
+      product =>
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.switches.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+
+    setSearchResults(filtered.slice(0, 5)); // 最多顯示 5 個結果
+  }, [searchQuery]);
+
+  // 點擊外部關閉搜尋
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearch(false);
+        setSearchQuery('');
+      }
+    };
+
+    if (showSearch) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSearch]);
+
+  const handleSearchClick = () => {
+    setShowSearch(!showSearch);
+    if (showSearch) {
+      setSearchQuery('');
+    }
+  };
+
+  const handleProductClick = (productId: number) => {
+    router.push(`/products/${productId}`);
+    setShowSearch(false);
+    setSearchQuery('');
   };
 
   return (
@@ -79,9 +135,73 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
         ))}
       </div>
       <div className='flex items-center space-x-2'>
-        <button className='flex h-10 w-10 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'>
-          <IconSearch size={24} />
-        </button>
+        {/* 搜尋功能區域 */}
+        <div className='relative' ref={searchRef}>
+          <button
+            onClick={handleSearchClick}
+            className='flex h-10 w-10 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'
+            aria-label='搜尋產品'
+          >
+            <IconSearch size={24} />
+          </button>
+
+          {/* 搜尋輸入框 */}
+          <AnimatePresence>
+            {showSearch && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className='absolute right-0 top-12 w-96 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl overflow-hidden z-50'
+              >
+                <div className='p-4'>
+                  <input
+                    type='text'
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder='搜尋鍵盤名稱、軸體、分類...'
+                    className='w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white placeholder-neutral-500'
+                    autoFocus
+                  />
+                </div>
+
+                {/* 搜尋結果 */}
+                {searchQuery && (
+                  <div className='max-h-96 overflow-y-auto'>
+                    {searchResults.length > 0 ? (
+                      <div className='border-t border-zinc-200 dark:border-zinc-700'>
+                        {searchResults.map(product => (
+                          <button
+                            key={product.id}
+                            onClick={() => handleProductClick(product.id)}
+                            className='w-full px-4 py-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left flex items-center space-x-3'
+                          >
+                            <div className='flex-1'>
+                              <p className='text-sm font-medium text-neutral-900 dark:text-white'>
+                                {product.name}
+                              </p>
+                              <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
+                                {product.category} • {product.switches}
+                              </p>
+                            </div>
+                            <p className='text-sm font-semibold text-blue-600 dark:text-blue-400'>
+                              NT$ {product.price.toLocaleString()}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className='px-4 py-8 text-center text-neutral-500 dark:text-neutral-400'>
+                        找不到符合的產品
+                      </div>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
         <div className='relative'>
           <button
             onClick={handleUserIconClick}
@@ -151,6 +271,10 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
 const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] }) => {
   const [open, setOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const searchRef = useRef<HTMLDivElement>(null);
   const { totalItems, toggleCart } = useCart();
   const { isAuthenticated, currentUser, logout } = useAuth();
   const router = useRouter();
@@ -170,6 +294,56 @@ const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] })
     router.push('/');
   };
 
+  // 搜尋功能
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setSearchResults([]);
+      return;
+    }
+
+    const products = productsData as Product[];
+    const filtered = products.filter(
+      product =>
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.switches.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+
+    setSearchResults(filtered.slice(0, 5));
+  }, [searchQuery]);
+
+  // 點擊外部關閉搜尋
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearch(false);
+        setSearchQuery('');
+      }
+    };
+
+    if (showSearch) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSearch]);
+
+  const handleSearchClick = () => {
+    setShowSearch(!showSearch);
+    if (showSearch) {
+      setSearchQuery('');
+    }
+  };
+
+  const handleProductClick = (productId: number) => {
+    router.push(`/products/${productId}`);
+    setShowSearch(false);
+    setSearchQuery('');
+  };
+
   return (
     <>
       <motion.div
@@ -179,9 +353,71 @@ const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] })
         <div className='flex w-full flex-row items-center justify-between px-4'>
           <Logo />
           <div className='flex items-center space-x-1'>
-            <button className='flex h-9 w-9 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'>
-              <IconSearch size={22} />
-            </button>
+            {/* 手機版搜尋按鈕 */}
+            <div className='relative' ref={searchRef}>
+              <button
+                onClick={handleSearchClick}
+                className='flex h-9 w-9 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'
+                aria-label='搜尋產品'
+              >
+                <IconSearch size={22} />
+              </button>
+
+              {/* 手機版搜尋輸入框 */}
+              <AnimatePresence>
+                {showSearch && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className='absolute right-0 top-12 w-screen max-w-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl overflow-hidden z-50'
+                  >
+                    <div className='p-4'>
+                      <input
+                        type='text'
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        placeholder='搜尋鍵盤...'
+                        className='w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white placeholder-neutral-500 text-sm'
+                        autoFocus
+                      />
+                    </div>
+
+                    {/* 搜尋結果 */}
+                    {searchQuery && (
+                      <div className='max-h-80 overflow-y-auto'>
+                        {searchResults.length > 0 ? (
+                          <div className='border-t border-zinc-200 dark:border-zinc-700'>
+                            {searchResults.map(product => (
+                              <button
+                                key={product.id}
+                                onClick={() => handleProductClick(product.id)}
+                                className='w-full px-4 py-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left'
+                              >
+                                <p className='text-sm font-medium text-neutral-900 dark:text-white'>
+                                  {product.name}
+                                </p>
+                                <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
+                                  {product.category} • {product.switches}
+                                </p>
+                                <p className='text-sm font-semibold text-blue-600 dark:text-blue-400 mt-1'>
+                                  NT$ {product.price.toLocaleString()}
+                                </p>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className='px-4 py-8 text-center text-neutral-500 dark:text-neutral-400 text-sm'>
+                            找不到符合的產品
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <div className='relative'>
               <button
                 onClick={handleUserIconClick}
