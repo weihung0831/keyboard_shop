@@ -33,18 +33,18 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
   };
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+    <div
       className={cn(
-        'group relative cursor-pointer rounded-xl border border-zinc-600 bg-zinc-900/90 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:border-zinc-500',
+        'group relative rounded-xl border border-zinc-600 bg-zinc-900/90 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:border-zinc-500',
         'hover:shadow-blue-500/10',
         'h-[520px] flex flex-col', // Fixed height with flex layout (increased for button)
       )}
-      onClick={handleCardClick}
     >
       {/* Product Image - Fixed height */}
-      <div className='relative h-48 overflow-hidden rounded-t-xl bg-zinc-800 flex-shrink-0'>
+      <div
+        className='relative h-48 overflow-hidden rounded-t-xl bg-zinc-800 flex-shrink-0 cursor-pointer'
+        onClick={handleCardClick}
+      >
         <Image
           src={product.image}
           alt={product.name}
@@ -75,12 +75,15 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
       {/* Product Info - Flex grow to fill remaining space */}
       <div className='flex flex-col flex-grow p-6'>
         {/* Product Name - Fixed height with clamping */}
-        <h3 className='mb-2 text-lg font-semibold text-white line-clamp-2 group-hover:text-blue-400 transition-colors h-14 flex items-start'>
+        <h3
+          className='mb-2 text-lg font-semibold text-white line-clamp-2 group-hover:text-blue-400 transition-colors h-14 flex items-start cursor-pointer'
+          onClick={handleCardClick}
+        >
           <span className='line-clamp-2'>{product.name}</span>
         </h3>
 
         {/* Product Description - Fixed height with clamping */}
-        <div className='mb-3 h-10 flex items-start'>
+        <div className='mb-3 h-10 flex items-start cursor-pointer' onClick={handleCardClick}>
           <p className='text-sm text-zinc-300 line-clamp-2'>{product.description}</p>
         </div>
 
@@ -169,7 +172,7 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
       </div>
 
       {/* Hover Effect Overlay */}
-      <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 to-purple-500/0 opacity-0 transition-opacity duration-300 group-hover:opacity-10' />
-    </motion.div>
+      <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 to-purple-500/0 opacity-0 transition-opacity duration-300 group-hover:opacity-10 pointer-events-none' />
+    </div>
   );
 };

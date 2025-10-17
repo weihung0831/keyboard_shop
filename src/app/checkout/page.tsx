@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { OrderConfirmModal } from '@/components/ui/order-confirm-modal';
@@ -46,12 +47,13 @@ const SHIPPING_METHODS = [
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, totalItems, totalPrice, clearCart } = useCart();
+  const { currentUser } = useAuth();
 
-  // 表單狀態
+  // 表單狀態 - 如果已登入,自動帶入會員資料
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
-    name: '',
-    phone: '',
-    email: '',
+    name: currentUser?.name || '',
+    phone: currentUser?.phone || '',
+    email: currentUser?.email || '',
     address: '',
     city: '',
     postalCode: '',
@@ -185,6 +187,8 @@ export default function CheckoutPage() {
 
       // 準備訂單資料
       const orderData = {
+        id: crypto.randomUUID(),
+        userId: currentUser?.id || 'guest', // 加入使用者 ID
         orderNumber,
         shippingInfo,
         shippingMethod: {
@@ -197,6 +201,7 @@ export default function CheckoutPage() {
         totalPrice,
         shippingFee,
         finalTotal,
+        status: '處理中',
         orderDate: new Date().toLocaleString('zh-TW', {
           year: 'numeric',
           month: '2-digit',
@@ -206,9 +211,15 @@ export default function CheckoutPage() {
         }),
       };
 
-      // 將訂單資料存入 localStorage（確保寫入完成）
+      // 將訂單資料存入 localStorage
       try {
+        // 保留舊的 last-order-data 用於成功頁面顯示
         localStorage.setItem('last-order-data', JSON.stringify(orderData));
+
+        // 同時存入訂單列表
+        const existingOrders = JSON.parse(localStorage.getItem('keyboard_shop_orders') || '[]');
+        existingOrders.push(orderData);
+        localStorage.setItem('keyboard_shop_orders', JSON.stringify(existingOrders));
       } catch (e) {
         console.error('無法存入 localStorage:', e);
       }

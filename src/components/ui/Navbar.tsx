@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import React, { useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export function SimpleNavbarWithHoverEffects() {
   return <Navbar />;
@@ -28,7 +30,25 @@ const Navbar = () => {
 
 const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }) => {
   const [hovered, setHovered] = useState<number | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const { totalItems, toggleCart } = useCart();
+  const { isAuthenticated, currentUser, logout } = useAuth();
+  const router = useRouter();
+
+  const handleUserIconClick = () => {
+    if (isAuthenticated) {
+      setShowUserMenu(!showUserMenu);
+    } else {
+      router.push('/login');
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    setShowUserMenu(false);
+    router.push('/');
+  };
+
   return (
     <motion.div
       onMouseLeave={() => {
@@ -62,9 +82,51 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
         <button className='flex h-10 w-10 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'>
           <IconSearch size={24} />
         </button>
-        <button className='flex h-10 w-10 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'>
-          <IconUser size={24} />
-        </button>
+        <div className='relative'>
+          <button
+            onClick={handleUserIconClick}
+            className='flex h-10 w-10 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'
+            aria-label={isAuthenticated ? '會員選單' : '登入'}
+          >
+            <IconUser size={24} />
+          </button>
+
+          {/* 會員下拉選單 */}
+          {isAuthenticated && showUserMenu && (
+            <div className='absolute right-0 top-12 w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-lg overflow-hidden z-50'>
+              <div className='px-4 py-3 border-b border-zinc-700'>
+                <p className='text-sm font-medium text-white'>{currentUser?.name}</p>
+                <p className='text-xs text-zinc-400 truncate'>{currentUser?.email}</p>
+              </div>
+              <div className='py-2'>
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    router.push('/member/dashboard');
+                  }}
+                  className='w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors'
+                >
+                  會員專區
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    router.push('/member/profile');
+                  }}
+                  className='w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors'
+                >
+                  個人資料
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className='w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-zinc-800 transition-colors'
+                >
+                  登出
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         <button
           onClick={toggleCart}
           className='relative flex h-10 w-10 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'
@@ -88,7 +150,25 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
 
 const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] }) => {
   const [open, setOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const { totalItems, toggleCart } = useCart();
+  const { isAuthenticated, currentUser, logout } = useAuth();
+  const router = useRouter();
+
+  const handleUserIconClick = () => {
+    if (isAuthenticated) {
+      setShowUserMenu(!showUserMenu);
+    } else {
+      router.push('/login');
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    setShowUserMenu(false);
+    setOpen(false);
+    router.push('/');
+  };
 
   return (
     <>
@@ -102,9 +182,51 @@ const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] })
             <button className='flex h-9 w-9 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'>
               <IconSearch size={22} />
             </button>
-            <button className='flex h-9 w-9 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'>
-              <IconUser size={22} />
-            </button>
+            <div className='relative'>
+              <button
+                onClick={handleUserIconClick}
+                className='flex h-9 w-9 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'
+                aria-label={isAuthenticated ? '會員選單' : '登入'}
+              >
+                <IconUser size={22} />
+              </button>
+
+              {/* 會員下拉選單 (手機版) */}
+              {isAuthenticated && showUserMenu && (
+                <div className='absolute right-0 top-12 w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-lg overflow-hidden z-50'>
+                  <div className='px-4 py-3 border-b border-zinc-700'>
+                    <p className='text-sm font-medium text-white'>{currentUser?.name}</p>
+                    <p className='text-xs text-zinc-400 truncate'>{currentUser?.email}</p>
+                  </div>
+                  <div className='py-2'>
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        router.push('/member/dashboard');
+                      }}
+                      className='w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors'
+                    >
+                      會員專區
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        router.push('/member/profile');
+                      }}
+                      className='w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors'
+                    >
+                      個人資料
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className='w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-zinc-800 transition-colors'
+                    >
+                      登出
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             <button
               onClick={toggleCart}
               className='relative flex h-9 w-9 items-center justify-center text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white transition-colors'

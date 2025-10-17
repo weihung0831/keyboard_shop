@@ -4,6 +4,7 @@ import './globals.css';
 import { SimpleNavbarWithHoverEffects } from '@/components/ui/Navbar';
 import { SimpleFooterWithFourGrids } from '@/components/ui/Footer';
 import { CartProvider } from '@/contexts/CartContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { CartSidebar } from '@/components/ui/cart-sidebar';
 import { CartNotifications } from '@/components/ui/cart-notifications';
 
@@ -38,13 +39,15 @@ export default function RootLayout({
   return (
     <html lang='zh-TW' className='dark'>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <CartProvider>
-          <SimpleNavbarWithHoverEffects />
-          {children}
-          <SimpleFooterWithFourGrids />
-          <CartSidebar />
-          <CartNotifications />
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <SimpleNavbarWithHoverEffects />
+            {children}
+            <SimpleFooterWithFourGrids />
+            <CartSidebar />
+            <CartNotifications />
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );
