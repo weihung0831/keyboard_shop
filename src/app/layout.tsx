@@ -4,9 +4,11 @@ import './globals.css';
 import { SimpleNavbarWithHoverEffects } from '@/components/ui/Navbar';
 import { SimpleFooterWithFourGrids } from '@/components/ui/Footer';
 import { CartProvider } from '@/contexts/CartContext';
+import { WishlistProvider } from '@/contexts/WishlistContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CartSidebar } from '@/components/ui/cart-sidebar';
 import { CartNotifications } from '@/components/ui/cart-notifications';
+import WishlistNotifications from '@/components/ui/wishlist-notifications';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -40,13 +42,16 @@ export default function RootLayout({
     <html lang='zh-TW' className='dark'>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
-          <CartProvider>
-            <SimpleNavbarWithHoverEffects />
-            {children}
-            <SimpleFooterWithFourGrids />
-            <CartSidebar />
-            <CartNotifications />
-          </CartProvider>
+          <WishlistProvider>
+            <CartProvider>
+              <SimpleNavbarWithHoverEffects />
+              {children}
+              <SimpleFooterWithFourGrids />
+              <CartSidebar />
+              <CartNotifications />
+              <WishlistNotifications />
+            </CartProvider>
+          </WishlistProvider>
         </AuthProvider>
       </body>
     </html>

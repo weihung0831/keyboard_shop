@@ -231,6 +231,15 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
                 <button
                   onClick={() => {
                     setShowUserMenu(false);
+                    router.push('/member/wishlist');
+                  }}
+                  className='w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors'
+                >
+                  願望清單
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
                     router.push('/member/profile');
                   }}
                   className='w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors'
@@ -443,6 +452,15 @@ const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] })
                       className='w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors'
                     >
                       會員專區
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        router.push('/member/wishlist');
+                      }}
+                      className='w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors'
+                    >
+                      願望清單
                     </button>
                     <button
                       onClick={() => {

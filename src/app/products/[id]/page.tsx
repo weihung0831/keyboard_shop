@@ -9,7 +9,15 @@ import productsData from '@/data/products.json';
 import { cn } from '@/lib/utils';
 import Product3DViewer from '@/components/ui/product-3d-viewer';
 import { useCart } from '@/contexts/CartContext';
-import { IconShoppingCart, IconPlus, IconMinus, IconHeart } from '@tabler/icons-react';
+import { useWishlist } from '@/contexts/WishlistContext';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  IconShoppingCart,
+  IconPlus,
+  IconMinus,
+  IconHeart,
+  IconHeartFilled,
+} from '@tabler/icons-react';
 
 interface ProductDetailPageProps {
   params: Promise<{
@@ -21,6 +29,8 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
   const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { isAuthenticated } = useAuth();
 
   // 數量狀態管理
   const [quantity, setQuantity] = useState(1);
@@ -75,6 +85,20 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     // 跳轉到結帳頁面
     router.push('/checkout');
   };
+
+  /**
+   * 切換願望清單狀態
+   */
+  const handleToggleWishlist = () => {
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product);
+    }
+  };
+
+  // 檢查商品是否在願望清單中
+  const inWishlist = isInWishlist(product.id);
 
   return (
     <div className='min-h-screen bg-black'>
@@ -284,15 +308,27 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 <span>{product.inStock ? '加入購物車' : '缺貨中'}</span>
               </motion.button>
 
-              {/* 加入願望清單 */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className='flex w-full items-center justify-center space-x-2 rounded-lg border border-zinc-600 bg-transparent px-6 py-3 text-base font-medium text-zinc-300 transition-all duration-200 hover:bg-zinc-800 hover:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500/50'
-              >
-                <IconHeart className='h-5 w-5' />
-                <span>加入願望清單</span>
-              </motion.button>
+              {/* 加入願望清單 - 僅登入用戶可見 */}
+              {isAuthenticated && (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleToggleWishlist}
+                  className={cn(
+                    'flex w-full items-center justify-center space-x-2 rounded-lg border px-6 py-3 text-base font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-500/50',
+                    inWishlist
+                      ? 'border-pink-500 bg-pink-500/10 text-pink-400 hover:bg-pink-500/20'
+                      : 'border-zinc-600 bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100',
+                  )}
+                >
+                  {inWishlist ? (
+                    <IconHeartFilled className='h-5 w-5' />
+                  ) : (
+                    <IconHeart className='h-5 w-5' />
+                  )}
+                  <span>{inWishlist ? '已在願望清單' : '加入願望清單'}</span>
+                </motion.button>
+              )}
             </div>
 
             {/* Additional Info */}

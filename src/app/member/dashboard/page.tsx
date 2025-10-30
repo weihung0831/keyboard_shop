@@ -9,14 +9,16 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { getUserOrders } from '@/lib/storage';
 import type { OrderSummary } from '@/types/member';
-import { ShoppingBag, User, Package, Calendar, CreditCard } from 'lucide-react';
+import { ShoppingBag, User, Package, Calendar, CreditCard, Heart } from 'lucide-react';
 
 export default function MemberDashboardPage() {
   const { currentUser } = useAuth();
   const { isLoading } = useAuthGuard();
+  const { totalItems: wishlistTotalItems } = useWishlist();
   const [recentOrders, setRecentOrders] = useState<OrderSummary[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
 
@@ -59,6 +61,26 @@ export default function MemberDashboardPage() {
               <ShoppingBag className='text-blue-500 mb-3' size={32} />
               <h3 className='text-white font-medium'>訂單查詢</h3>
               <p className='text-sm text-zinc-400 mt-1'>查看您的訂單記錄</p>
+            </Link>
+            <Link
+              href='/member/wishlist'
+              className='bg-zinc-900/90 backdrop-blur-sm border border-zinc-700 rounded-lg p-6 hover:border-pink-500 transition-colors group'
+            >
+              <div className='flex items-center justify-between mb-3'>
+                <Heart
+                  className='text-pink-500 group-hover:text-pink-400 transition-colors'
+                  size={32}
+                />
+                {wishlistTotalItems > 0 && (
+                  <span className='inline-flex items-center justify-center h-6 min-w-6 px-2 rounded-full bg-pink-500 text-white text-xs font-medium'>
+                    {wishlistTotalItems}
+                  </span>
+                )}
+              </div>
+              <h3 className='text-white font-medium'>願望清單</h3>
+              <p className='text-sm text-zinc-400 mt-1'>
+                {wishlistTotalItems > 0 ? `${wishlistTotalItems} 個收藏商品` : '管理您的收藏商品'}
+              </p>
             </Link>
             <Link
               href='/member/profile'
