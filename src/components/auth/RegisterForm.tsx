@@ -13,6 +13,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import type { RegisterFormData } from '@/types/member';
 import { registerFormSchema } from '@/lib/validators';
 import { useAuth } from '@/contexts/AuthContext';
+import { ApiError } from '@/lib/api';
 import { PasswordStrength } from './PasswordStrength';
 import { cn } from '@/lib/utils';
 
@@ -53,10 +54,19 @@ export function RegisterForm() {
       // 註冊成功後自動登入並跳轉至會員專區
       router.push('/member/dashboard');
     } catch (error) {
-      if (error instanceof Error) {
+      // 處理 API 錯誤
+      if (error instanceof ApiError) {
+        // 若有欄位錯誤，顯示第一個錯誤訊息
+        if (error.errors) {
+          const firstError = Object.values(error.errors)[0];
+          setServerError(firstError?.[0] || error.message);
+        } else {
+          setServerError(error.message);
+        }
+      } else if (error instanceof Error) {
         setServerError(error.message);
       } else {
-        setServerError('註冊失敗,請稍後再試');
+        setServerError('註冊失敗，請稍後再試');
       }
     } finally {
       setIsSubmitting(false);
@@ -211,6 +221,24 @@ export function RegisterForm() {
           placeholder='0912-345-678'
         />
         {errors.phone && <p className='mt-1 text-sm text-red-500'>{errors.phone.message}</p>}
+      </div>
+
+      {/* 地址 */}
+      <div>
+        <label htmlFor='address' className='block text-sm font-medium text-zinc-300 mb-2'>
+          地址 <span className='text-zinc-500'>（選填）</span>
+        </label>
+        <input
+          type='text'
+          id='address'
+          {...register('address')}
+          className={cn(
+            'w-full rounded-lg border bg-zinc-800/50 px-4 py-3 text-white',
+            'placeholder-zinc-500 transition-colors focus:outline-none focus:ring-2',
+            'border-zinc-600 focus:border-blue-400 focus:ring-blue-500/30',
+          )}
+          placeholder='請輸入您的地址'
+        />
       </div>
 
       {/* 註冊按鈕 */}

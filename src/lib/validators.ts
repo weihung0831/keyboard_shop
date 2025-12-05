@@ -52,6 +52,11 @@ export const phoneSchema = z
 // ==================== 表單 Schema ====================
 
 /**
+ * 地址驗證規則（選填）
+ */
+export const addressSchema = z.string().optional();
+
+/**
  * 註冊表單驗證 Schema
  */
 export const registerFormSchema = z
@@ -61,6 +66,7 @@ export const registerFormSchema = z
     confirmPassword: z.string().min(1, ERROR_MESSAGES.CONFIRM_PASSWORD_REQUIRED),
     name: nameSchema,
     phone: phoneSchema,
+    address: addressSchema,
   })
   .refine(data => data.password === data.confirmPassword, {
     message: ERROR_MESSAGES.CONFIRM_PASSWORD_MISMATCH,
@@ -81,7 +87,29 @@ export const loginFormSchema = z.object({
 export const updateProfileFormSchema = z.object({
   name: nameSchema,
   phone: phoneSchema,
+  address: addressSchema,
 });
+
+/**
+ * 修改密碼表單驗證 Schema
+ */
+export const changePasswordFormSchema = z
+  .object({
+    currentPassword: z.string().min(1, ERROR_MESSAGES.CURRENT_PASSWORD_REQUIRED),
+    newPassword: z
+      .string()
+      .min(1, ERROR_MESSAGES.NEW_PASSWORD_REQUIRED)
+      .min(8, ERROR_MESSAGES.NEW_PASSWORD_MIN_LENGTH),
+    confirmNewPassword: z.string().min(1, ERROR_MESSAGES.CONFIRM_NEW_PASSWORD_REQUIRED),
+  })
+  .refine(data => data.newPassword === data.confirmNewPassword, {
+    message: ERROR_MESSAGES.NEW_PASSWORD_MISMATCH,
+    path: ['confirmNewPassword'],
+  })
+  .refine(data => data.newPassword !== data.currentPassword, {
+    message: ERROR_MESSAGES.NEW_PASSWORD_SAME_AS_CURRENT,
+    path: ['newPassword'],
+  });
 
 // ==================== 密碼強度檢查 ====================
 

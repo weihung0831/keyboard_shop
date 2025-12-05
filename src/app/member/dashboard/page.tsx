@@ -13,7 +13,7 @@ import { useWishlist } from '@/contexts/WishlistContext';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { getUserOrders } from '@/lib/storage';
 import type { OrderSummary } from '@/types/member';
-import { ShoppingBag, User, Package, Calendar, CreditCard, Heart } from 'lucide-react';
+import { ShoppingBag, User, Package, Calendar, CreditCard, Heart, Lock } from 'lucide-react';
 
 export default function MemberDashboardPage() {
   const { currentUser } = useAuth();
@@ -89,6 +89,14 @@ export default function MemberDashboardPage() {
               <User className='text-blue-500 mb-3' size={32} />
               <h3 className='text-white font-medium'>個人資料</h3>
               <p className='text-sm text-zinc-400 mt-1'>管理您的個人資訊</p>
+            </Link>
+            <Link
+              href='/member/change-password'
+              className='bg-zinc-900/90 backdrop-blur-sm border border-zinc-700 rounded-lg p-6 hover:border-amber-500 transition-colors'
+            >
+              <Lock className='text-amber-500 mb-3' size={32} />
+              <h3 className='text-white font-medium'>修改密碼</h3>
+              <p className='text-sm text-zinc-400 mt-1'>更新您的登入密碼</p>
             </Link>
           </div>
 

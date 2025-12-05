@@ -49,11 +49,6 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
-
-        {/* 安全警告 */}
-        <div className='mt-6 flex items-start gap-2 px-4'>
-          <p className='text-xs text-zinc-500'>⚠️ 此為展示專案,請勿使用真實密碼。</p>
-        </div>
       </motion.div>
     </div>
   );

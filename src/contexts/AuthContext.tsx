@@ -3,11 +3,12 @@
 /**
  * 驗證上下文 (Authentication Context)
  * 管理使用者登入狀態與相關操作
+ * 使用 Laravel API 進行認證
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { CurrentUser, RegisterFormData, LoginFormData } from '@/types/member';
-import { registerUser, loginUser, logoutUser, getCurrentUser } from '@/lib/storage';
+import { apiRegister, apiLogin, apiLogout, apiGetProfile, getToken, removeToken } from '@/lib/api';
 
 // ==================== Context 型別定義 ====================
 
@@ -17,8 +18,8 @@ interface AuthContextType {
   isLoading: boolean;
   login: (data: LoginFormData) => Promise<void>;
   register: (data: RegisterFormData) => Promise<void>;
-  logout: () => void;
-  refreshUser: () => void;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 // ==================== Context 建立 ====================
@@ -35,43 +36,57 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 初始化：從 localStorage 讀取登入狀態
+  // 初始化：檢查 Token 並取得使用者資料
   useEffect(() => {
-    const user = getCurrentUser();
-    setCurrentUser(user);
-    setIsLoading(false);
+    const initAuth = async () => {
+      const token = getToken();
+
+      if (token) {
+        try {
+          // 有 Token，嘗試取得使用者資料
+          const user = await apiGetProfile();
+          setCurrentUser(user);
+        } catch {
+          // Token 無效，清除
+          removeToken();
+          setCurrentUser(null);
+        }
+      }
+
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
-  // 註冊
+  // 註冊（呼叫 API）
   const register = useCallback(async (data: RegisterFormData) => {
-    try {
-      const user = registerUser(data);
-      setCurrentUser(user);
-    } catch (error) {
-      throw error;
-    }
+    const user = await apiRegister(data);
+    setCurrentUser(user);
   }, []);
 
-  // 登入
+  // 登入（呼叫 API）
   const login = useCallback(async (data: LoginFormData) => {
-    try {
-      const user = loginUser(data.email, data.password);
-      setCurrentUser(user);
-    } catch (error) {
-      throw error;
-    }
+    const user = await apiLogin(data);
+    setCurrentUser(user);
   }, []);
 
-  // 登出
-  const logout = useCallback(() => {
-    logoutUser();
+  // 登出（呼叫 API）
+  const logout = useCallback(async () => {
+    await apiLogout();
     setCurrentUser(null);
   }, []);
 
-  // 重新整理使用者資料
-  const refreshUser = useCallback(() => {
-    const user = getCurrentUser();
-    setCurrentUser(user);
+  // 重新整理使用者資料（從 API 取得）
+  const refreshUser = useCallback(async () => {
+    try {
+      const user = await apiGetProfile();
+      setCurrentUser(user);
+    } catch {
+      // 取得失敗，清除登入狀態
+      removeToken();
+      setCurrentUser(null);
+    }
   }, []);
 
   const value: AuthContextType = {

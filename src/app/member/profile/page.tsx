@@ -9,12 +9,12 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { updateProfile } from '@/lib/storage';
+import { apiUpdateProfile, ApiError } from '@/lib/api';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateProfileFormSchema } from '@/lib/validators';
 import type { UpdateProfileFormData } from '@/types/member';
-import { User, Mail, Phone, Edit2, Save, X, Check } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Edit2, Save, X, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function ProfilePage() {
@@ -34,6 +34,7 @@ export default function ProfilePage() {
     defaultValues: {
       name: currentUser?.name || '',
       phone: currentUser?.phone || '',
+      address: currentUser?.address || '',
     },
   });
 
@@ -43,6 +44,7 @@ export default function ProfilePage() {
     reset({
       name: currentUser?.name || '',
       phone: currentUser?.phone || '',
+      address: currentUser?.address || '',
     });
   };
 
@@ -52,6 +54,7 @@ export default function ProfilePage() {
     reset({
       name: currentUser?.name || '',
       phone: currentUser?.phone || '',
+      address: currentUser?.address || '',
     });
   };
 
@@ -61,14 +64,12 @@ export default function ProfilePage() {
 
     try {
       setIsSaving(true);
-      // 模擬 API 延遲
-      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // 更新個人資料
-      updateProfile(currentUser.id, data);
+      // 呼叫 API 更新個人資料
+      await apiUpdateProfile(data);
 
       // 重新整理使用者資料
-      refreshUser();
+      await refreshUser();
 
       // 顯示成功訊息
       setShowSuccessMessage(true);
@@ -78,7 +79,11 @@ export default function ProfilePage() {
       setIsEditing(false);
     } catch (error) {
       console.error('更新個人資料失敗:', error);
-      alert(error instanceof Error ? error.message : '更新失敗，請稍後再試');
+      if (error instanceof ApiError) {
+        alert(error.message);
+      } else {
+        alert(error instanceof Error ? error.message : '更新失敗，請稍後再試');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -201,6 +206,29 @@ export default function ProfilePage() {
                 )}
               </div>
 
+              {/* 地址 */}
+              <div>
+                <label className='block text-sm font-medium text-zinc-300 mb-2'>
+                  <div className='flex items-center gap-2'>
+                    <MapPin size={18} />
+                    地址
+                    <span className='text-zinc-500 text-xs'>（選填）</span>
+                  </div>
+                </label>
+                <input
+                  type='text'
+                  {...register('address')}
+                  disabled={!isEditing}
+                  placeholder='請輸入您的地址'
+                  className={cn(
+                    'w-full px-4 py-3 rounded-lg border transition-colors',
+                    isEditing
+                      ? 'bg-zinc-800 border-zinc-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30'
+                      : 'bg-zinc-800 border-zinc-700 text-zinc-300 cursor-not-allowed',
+                  )}
+                />
+              </div>
+
               {/* 編輯模式的按鈕 */}
               {isEditing && (
                 <div className='flex gap-3 pt-4'>
@@ -239,13 +267,6 @@ export default function ProfilePage() {
                 </div>
               )}
             </form>
-          </div>
-
-          {/* 提示訊息 */}
-          <div className='mt-6 px-4'>
-            <p className='text-xs text-zinc-500'>
-              ⚠️ 此為展示專案，資料儲存於瀏覽器本地。清除瀏覽器資料將會遺失所有資訊。
-            </p>
           </div>
         </motion.div>
       </div>

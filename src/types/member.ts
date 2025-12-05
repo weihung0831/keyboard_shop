@@ -35,6 +35,7 @@ export interface CurrentUser {
   email: string;
   name: string;
   phone: string;
+  address: string; // 地址
   loginAt: string; // 登入時間
 }
 
@@ -49,6 +50,7 @@ export interface RegisterFormData {
   confirmPassword: string;
   name: string;
   phone: string;
+  address?: string; // 地址（選填）
 }
 
 /**
@@ -65,6 +67,16 @@ export interface LoginFormData {
 export interface UpdateProfileFormData {
   name: string;
   phone: string;
+  address?: string; // 地址（選填）
+}
+
+/**
+ * 修改密碼表單資料
+ */
+export interface ChangePasswordFormData {
+  currentPassword: string; // 目前密碼
+  newPassword: string; // 新密碼
+  confirmNewPassword: string; // 確認新密碼
 }
 
 // ==================== 錯誤訊息 ====================
@@ -87,6 +99,13 @@ export const ERROR_MESSAGES = {
 
   PHONE_REQUIRED: '請輸入電話號碼',
   PHONE_INVALID: '請輸入有效的台灣手機號碼 (例: 0912-345-678)',
+
+  CURRENT_PASSWORD_REQUIRED: '請輸入目前密碼',
+  NEW_PASSWORD_REQUIRED: '請輸入新密碼',
+  NEW_PASSWORD_MIN_LENGTH: '新密碼至少需要 8 個字元',
+  CONFIRM_NEW_PASSWORD_REQUIRED: '請確認新密碼',
+  NEW_PASSWORD_MISMATCH: '新密碼與確認密碼不一致',
+  NEW_PASSWORD_SAME_AS_CURRENT: '新密碼不能與目前密碼相同',
 
   UNKNOWN_ERROR: '發生未知錯誤,請稍後再試',
 } as const;

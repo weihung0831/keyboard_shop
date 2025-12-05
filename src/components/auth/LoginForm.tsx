@@ -13,6 +13,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import type { LoginFormData } from '@/types/member';
 import { loginFormSchema } from '@/lib/validators';
 import { useAuth } from '@/contexts/AuthContext';
+import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 export function LoginForm() {
@@ -54,10 +55,13 @@ export function LoginForm() {
         router.push('/member/dashboard');
       }
     } catch (error) {
-      if (error instanceof Error) {
+      // 處理 API 錯誤
+      if (error instanceof ApiError) {
+        setServerError(error.message);
+      } else if (error instanceof Error) {
         setServerError(error.message);
       } else {
-        setServerError('登入失敗,請稍後再試');
+        setServerError('登入失敗，請稍後再試');
       }
     } finally {
       setIsSubmitting(false);

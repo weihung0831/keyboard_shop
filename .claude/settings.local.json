@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__smithery-ai-server-sequential-thinking__sequentialthinking",
+      "Bash(php artisan test:*)",
+      "Bash(find:*)",
+      "Bash(php artisan:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

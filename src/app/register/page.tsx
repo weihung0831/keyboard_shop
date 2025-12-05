@@ -41,14 +41,6 @@ export default function RegisterPage() {
             </p>
           </div>
         </div>
-
-        {/* 安全警告 */}
-        <div className='mt-6 flex items-start gap-2 px-4'>
-          <p className='text-xs text-zinc-500'>
-            ⚠️ 此為展示專案,請勿使用真實密碼。密碼僅以 Base64
-            編碼儲存於瀏覽器本地,不適用於生產環境。
-          </p>
-        </div>
       </motion.div>
     </div>
   );

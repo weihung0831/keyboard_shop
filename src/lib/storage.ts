@@ -64,6 +64,7 @@ export const registerUser = (data: RegisterFormData): CurrentUser => {
     email: newUser.email,
     name: newUser.name,
     phone: newUser.phone,
+    address: '',
     loginAt: new Date().toISOString(),
   };
 
@@ -96,6 +97,7 @@ export const loginUser = (email: string, password: string): CurrentUser => {
     email: user.email,
     name: user.name,
     phone: user.phone,
+    address: '',
     loginAt: new Date().toISOString(),
   };
 
