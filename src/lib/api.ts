@@ -12,6 +12,15 @@ import type {
   ChangePasswordFormData,
   CurrentUser,
 } from '@/types/member';
+import type {
+  Product,
+  ProductCategory,
+  ProductsApiResponse,
+  CategoriesApiResponse,
+  ProductsQueryParams,
+  SearchSuggestion,
+  SearchSuggestionsResponse,
+} from '@/types/product';
 
 // ==================== API 設定 ====================
 
@@ -224,6 +233,59 @@ export const apiChangePassword = async (data: ChangePasswordFormData): Promise<v
     new_password: data.newPassword,
     new_password_confirmation: data.confirmNewPassword,
   });
+};
+
+// ==================== 商品 API ====================
+
+/**
+ * 取得商品列表
+ */
+export const apiGetProducts = async (
+  params?: ProductsQueryParams,
+): Promise<ProductsApiResponse> => {
+  const response = await api.get<ProductsApiResponse>('/products', { params });
+  return response.data;
+};
+
+/**
+ * 取得單一商品詳情
+ */
+export const apiGetProduct = async (idOrSlug: string | number): Promise<Product> => {
+  const response = await api.get<{ message: string; data: Product }>(`/products/${idOrSlug}`);
+  return response.data.data;
+};
+
+/**
+ * 取得搜尋建議
+ */
+export const apiGetSearchSuggestions = async (query: string): Promise<SearchSuggestion[]> => {
+  if (query.length < 2) {
+    return [];
+  }
+  const response = await api.get<SearchSuggestionsResponse>('/products/search/suggestions', {
+    params: { q: query },
+  });
+  return response.data.suggestions;
+};
+
+// ==================== 分類 API ====================
+
+/**
+ * 取得分類列表
+ */
+export const apiGetCategories = async (): Promise<ProductCategory[]> => {
+  const response = await api.get<CategoriesApiResponse>('/categories');
+  return response.data.data;
+};
+
+/**
+ * 取得單一分類詳情
+ */
+export const apiGetCategory = async (idOrSlug: string | number): Promise<ProductCategory> => {
+  const response = await api.get<{ message: string; data: ProductCategory }>(
+    `/categories/${idOrSlug}`,
+  );
+  return response.data.data;
 };
 
 export default api;

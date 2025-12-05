@@ -249,8 +249,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
    */
   const actions: ExtendedCartActions = {
     addToCart: (product: Product, quantity = 1) => {
-      // 檢查商品是否有庫存
-      if (!product.inStock) {
+      // 檢查商品是否有庫存（使用 stock 欄位判斷）
+      const inStock = product.stock > 0;
+      if (!inStock) {
         actions.addNotification({
           type: 'warning',
           title: '商品缺貨',

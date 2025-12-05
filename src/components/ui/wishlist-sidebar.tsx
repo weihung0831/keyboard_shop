@@ -36,9 +36,15 @@ function WishlistItemComponent({ item, onRemove, onAddToCart }: WishlistItemComp
     >
       {/* 商品圖片 */}
       <div className='relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-zinc-700'>
-        <Image src={product.image} alt={product.name} fill className='object-cover' sizes='64px' />
+        <Image
+          src={product.primary_image || '/placeholder.png'}
+          alt={product.name}
+          fill
+          className='object-cover'
+          sizes='64px'
+        />
         {/* 缺貨遮罩 */}
-        {!product.inStock && (
+        {product.stock <= 0 && (
           <div className='absolute inset-0 flex items-center justify-center bg-black/60'>
             <span className='text-xs font-medium text-red-400'>缺貨</span>
           </div>
@@ -49,7 +55,7 @@ function WishlistItemComponent({ item, onRemove, onAddToCart }: WishlistItemComp
       <div className='flex-1 space-y-2'>
         <div>
           <h4 className='text-sm font-medium text-white line-clamp-2'>{product.name}</h4>
-          <p className='text-xs text-zinc-400'>{product.category}</p>
+          <p className='text-xs text-zinc-400'>{product.category?.name || '未分類'}</p>
         </div>
 
         {/* 價格和操作按鈕 */}
@@ -60,17 +66,17 @@ function WishlistItemComponent({ item, onRemove, onAddToCart }: WishlistItemComp
 
           <button
             onClick={() => onAddToCart(product.id)}
-            disabled={!product.inStock}
+            disabled={product.stock <= 0}
             className={cn(
               'flex items-center space-x-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-              product.inStock
+              product.stock > 0
                 ? 'bg-blue-600 text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30'
                 : 'bg-zinc-700 text-zinc-500 cursor-not-allowed',
             )}
             aria-label={`將 ${product.name} 加入購物車`}
           >
             <IconShoppingCart className='h-3.5 w-3.5' />
-            <span>{product.inStock ? '加入購物車' : '缺貨中'}</span>
+            <span>{product.stock > 0 ? '加入購物車' : '缺貨中'}</span>
           </button>
         </div>
       </div>
@@ -120,7 +126,7 @@ export function WishlistSidebar({ isOpen, onClose }: WishlistSidebarProps) {
 
   const handleAddToCart = (productId: number) => {
     const item = items.find(item => item.product.id === productId);
-    if (item && item.product.inStock) {
+    if (item && item.product.stock > 0) {
       addToCart(item.product, 1);
     }
   };

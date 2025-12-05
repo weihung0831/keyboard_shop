@@ -23,7 +23,7 @@ export default function MemberWishlistPage() {
 
   const handleAddToCart = (productId: number) => {
     const item = items.find(item => item.product.id === productId);
-    if (item && item.product.inStock) {
+    if (item && item.product.stock > 0) {
       addToCart(item.product, 1);
     }
   };
@@ -119,13 +119,13 @@ export default function MemberWishlistPage() {
                     onClick={() => handleViewProduct(item.product.id)}
                   >
                     <Image
-                      src={item.product.image}
+                      src={item.product.primary_image || '/placeholder.png'}
                       alt={item.product.name}
                       fill
                       className='object-cover group-hover:scale-105 transition-transform duration-300'
                       sizes='(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw'
                     />
-                    {!item.product.inStock && (
+                    {item.product.stock <= 0 && (
                       <div className='absolute inset-0 flex items-center justify-center bg-black/60'>
                         <span className='text-sm font-medium text-red-400 bg-red-500/20 px-3 py-1 rounded-full border border-red-500'>
                           缺貨中
@@ -152,7 +152,7 @@ export default function MemberWishlistPage() {
                       onClick={() => handleViewProduct(item.product.id)}
                     >
                       <span className='inline-block text-xs font-medium text-pink-400 bg-pink-500/10 px-2 py-1 rounded mb-2'>
-                        {item.product.category}
+                        {item.product.category?.name || '未分類'}
                       </span>
                       <h3 className='text-lg font-semibold text-white line-clamp-2 hover:text-blue-400 transition-colors'>
                         {item.product.name}
@@ -169,24 +169,24 @@ export default function MemberWishlistPage() {
                       </div>
                       <button
                         onClick={() => handleAddToCart(item.product.id)}
-                        disabled={!item.product.inStock}
+                        disabled={item.product.stock <= 0}
                         className={cn(
                           'flex items-center space-x-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all',
-                          item.product.inStock
+                          item.product.stock > 0
                             ? 'bg-blue-600 text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30'
                             : 'bg-zinc-700 text-zinc-500 cursor-not-allowed',
                         )}
                         aria-label={`將 ${item.product.name} 加入購物車`}
                       >
                         <IconShoppingCart className='h-4 w-4' />
-                        <span>{item.product.inStock ? '加入購物車' : '缺貨中'}</span>
+                        <span>{item.product.stock > 0 ? '加入購物車' : '缺貨中'}</span>
                       </button>
                     </div>
 
                     {/* 商品規格 */}
                     <div className='flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-800'>
-                      <span>{item.product.switches}</span>
-                      <span>{item.product.wireless ? '無線' : '有線'}</span>
+                      <span>{item.product.specifications?.['軸體'] || '-'}</span>
+                      <span>{item.product.specifications?.['連接方式'] || '-'}</span>
                     </div>
                   </div>
                 </motion.div>

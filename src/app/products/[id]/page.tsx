@@ -1,13 +1,12 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { notFound } from 'next/navigation';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import type { Product } from '@/types/product';
-import productsData from '@/data/products.json';
+import { apiGetProduct } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import Product3DViewer from '@/components/ui/product-3d-viewer';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +16,7 @@ import {
   IconMinus,
   IconHeart,
   IconHeartFilled,
+  IconLoader2,
 } from '@tabler/icons-react';
 
 interface ProductDetailPageProps {
@@ -32,15 +32,49 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { isAuthenticated } = useAuth();
 
+  // 產品資料狀態
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   // 數量狀態管理
   const [quantity, setQuantity] = useState(1);
 
-  const products = productsData as Product[];
-  const product = products.find(p => p.id === parseInt(resolvedParams.id));
+  // 目前選擇的圖片索引
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  if (!product) {
-    notFound();
-  }
+  // 載入產品資料
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await apiGetProduct(resolvedParams.id);
+        setProduct(data);
+      } catch (err) {
+        console.error('載入產品失敗:', err);
+        setError('無法載入產品資料');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [resolvedParams.id]);
+
+  // 從 specifications 取得規格資訊
+  const specs = product?.specifications || {};
+  const switches = specs['軸體'] || specs.switches || '-';
+  const layout = specs['配置'] || specs.layout || '-';
+  const connection = specs['連接方式'] || specs.connection || '-';
+
+  // 取得產品圖片
+  const productImages = product?.images || [];
+  const currentImage =
+    productImages[selectedImageIndex]?.url || product?.primary_image || '/placeholder.png';
+
+  // 判斷是否有庫存
+  const inStock = (product?.stock || 0) > 0;
 
   const handleBackClick = () => {
     router.push('/products');
@@ -50,14 +84,14 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
    * 增加數量
    */
   const increaseQuantity = () => {
-    setQuantity(prev => Math.min(prev + 1, 99)); // 最大99個
+    setQuantity(prev => Math.min(prev + 1, 99));
   };
 
   /**
    * 減少數量
    */
   const decreaseQuantity = () => {
-    setQuantity(prev => Math.max(prev - 1, 1)); // 最小1個
+    setQuantity(prev => Math.max(prev - 1, 1));
   };
 
   /**
@@ -74,22 +108,26 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
    * 加入購物車
    */
   const handleAddToCart = () => {
-    addToCart(product, quantity);
+    if (product) {
+      addToCart(product, quantity);
+    }
   };
 
   /**
    * 立即購買
    */
   const handleBuyNow = () => {
-    addToCart(product, quantity);
-    // 跳轉到結帳頁面
-    router.push('/checkout');
+    if (product) {
+      addToCart(product, quantity);
+      router.push('/checkout');
+    }
   };
 
   /**
    * 切換願望清單狀態
    */
   const handleToggleWishlist = () => {
+    if (!product) return;
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
     } else {
@@ -97,12 +135,54 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     }
   };
 
+  // Loading 狀態
+  if (loading) {
+    return (
+      <div className='min-h-screen bg-black flex items-center justify-center'>
+        <div className='text-center'>
+          <IconLoader2 className='h-12 w-12 text-blue-400 animate-spin mx-auto mb-4' />
+          <p className='text-zinc-400'>載入產品資料中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 錯誤狀態
+  if (error || !product) {
+    return (
+      <div className='min-h-screen bg-black flex items-center justify-center'>
+        <div className='text-center'>
+          <p className='text-red-400 mb-4'>{error || '找不到此產品'}</p>
+          <button
+            onClick={handleBackClick}
+            className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors'
+          >
+            返回商品列表
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // 檢查商品是否在願望清單中
   const inWishlist = isInWishlist(product.id);
 
+  // 從 specifications 取得更多規格用於顯示
+  const displaySpecs = [
+    { label: '軸體類型', value: switches },
+    { label: '鍵盤配列', value: layout },
+    { label: '連接方式', value: connection },
+    { label: '庫存狀態', value: inStock ? `有庫存 (${product.stock})` : '缺貨中' },
+  ];
+
+  // 額外規格（從 specifications 中過濾）
+  const additionalSpecs = Object.entries(specs).filter(
+    ([key]) => !['軸體', '配置', '連接方式', 'switches', 'layout', 'connection'].includes(key),
+  );
+
   return (
     <div className='min-h-screen bg-black'>
-      <div className='container mx-auto px-4 py-24'>
+      <div className='w-full px-4 sm:px-6 lg:px-8 py-24 mx-auto max-w-7xl box-border'>
         {/* Back Button */}
         <motion.button
           initial={{ opacity: 0, x: -20 }}
@@ -121,40 +201,97 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           返回商品列表
         </motion.button>
 
-        <div className='grid gap-8 lg:grid-cols-2'>
+        <div className='grid gap-8 lg:grid-cols-2 w-full'>
           {/* Product Images */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className='space-y-4'
+            className='space-y-4 w-full min-w-0'
           >
-            {/* 3D 產品查看器 */}
-            <Product3DViewer
-              imageSrc={product.image}
-              imageAlt={product.name}
-              inStock={product.inStock}
-            />
+            {/* 主圖片 */}
+            <div className='relative aspect-square overflow-hidden rounded-xl bg-zinc-900 border border-zinc-700'>
+              <Image
+                src={currentImage}
+                alt={product.name}
+                fill
+                className='object-cover'
+                sizes='(max-width: 1024px) 100vw, 50vw'
+                priority
+              />
+              {/* Stock Badge */}
+              <div className='absolute top-4 right-4'>
+                {inStock ? (
+                  <span className='rounded-full bg-green-500/80 px-3 py-1 text-sm font-medium text-white border border-green-400'>
+                    現貨
+                  </span>
+                ) : (
+                  <span className='rounded-full bg-red-500/80 px-3 py-1 text-sm font-medium text-white border border-red-400'>
+                    缺貨
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* 縮圖列表 */}
+            {productImages.length > 1 && (
+              <div className='flex gap-2 overflow-x-auto pb-2'>
+                {productImages.map((image, index) => (
+                  <button
+                    key={image.id}
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={cn(
+                      'relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all',
+                      selectedImageIndex === index
+                        ? 'border-blue-500'
+                        : 'border-zinc-700 hover:border-zinc-500',
+                    )}
+                  >
+                    <Image
+                      src={image.url}
+                      alt={`${product.name} - 圖片 ${index + 1}`}
+                      fill
+                      className='object-cover'
+                      sizes='80px'
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </motion.div>
 
           {/* Product Info */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className='space-y-6'
+            className='space-y-6 w-full min-w-0'
           >
             {/* Category */}
             <div>
               <span className='inline-block rounded-full bg-purple-500/80 px-3 py-1 text-sm font-medium text-white border border-purple-400'>
-                {product.category}
+                {product.category?.name || '未分類'}
               </span>
             </div>
 
             {/* Product Name */}
-            <h1 className='text-3xl font-bold text-white'>{product.name}</h1>
+            <h1 className='text-2xl sm:text-3xl font-bold text-white break-words'>
+              {product.name}
+            </h1>
 
             {/* Price */}
-            <div className='text-3xl font-bold text-blue-400'>
-              NT$ {product.price.toLocaleString()}
+            <div className='flex flex-wrap items-center gap-2 sm:gap-3'>
+              <span className='text-2xl sm:text-3xl font-bold text-blue-400'>
+                NT$ {product.price.toLocaleString()}
+              </span>
+              {product.original_price && product.original_price > product.price && (
+                <>
+                  <span className='text-lg sm:text-xl text-zinc-500 line-through'>
+                    NT$ {product.original_price.toLocaleString()}
+                  </span>
+                  <span className='rounded-full bg-red-500/80 px-2 py-1 text-xs font-medium text-white'>
+                    {Math.round((1 - product.price / product.original_price) * 100)}% OFF
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Description */}
@@ -164,68 +301,47 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             <div className='space-y-4'>
               <h3 className='text-xl font-semibold text-white'>產品規格</h3>
               <div className='grid gap-3 sm:grid-cols-2'>
-                <div className='rounded-lg bg-zinc-900/90 p-4 border border-zinc-600 backdrop-blur-sm'>
-                  <dt className='text-sm font-medium text-zinc-400'>軸體類型</dt>
-                  <dd className='mt-1 text-lg font-semibold text-white'>{product.switches}</dd>
-                </div>
-                <div className='rounded-lg bg-zinc-900/90 p-4 border border-zinc-600 backdrop-blur-sm'>
-                  <dt className='text-sm font-medium text-zinc-400'>鍵盤配列</dt>
-                  <dd className='mt-1 text-lg font-semibold text-white'>{product.layout}</dd>
-                </div>
-                <div className='rounded-lg bg-zinc-900/90 p-4 border border-zinc-600 backdrop-blur-sm'>
-                  <dt className='text-sm font-medium text-zinc-400'>連接方式</dt>
-                  <dd className='mt-1 text-lg font-semibold text-white'>
-                    {product.wireless ? '無線' : '有線'}
-                  </dd>
-                </div>
-                <div className='rounded-lg bg-zinc-900/90 p-4 border border-zinc-600 backdrop-blur-sm'>
-                  <dt className='text-sm font-medium text-zinc-400'>庫存狀態</dt>
-                  <dd className='mt-1 text-lg font-semibold text-white'>
-                    {product.inStock ? '有庫存' : '缺貨中'}
-                  </dd>
-                </div>
-              </div>
-            </div>
-
-            {/* Features */}
-            <div className='space-y-4'>
-              <h3 className='text-xl font-semibold text-white'>產品特色</h3>
-              <div className='grid gap-2'>
-                {product.features.map((feature, index) => (
+                {displaySpecs.map((spec, index) => (
                   <div
                     key={index}
-                    className='flex items-center rounded-lg bg-zinc-900/90 p-3 border border-zinc-600 backdrop-blur-sm'
+                    className='rounded-lg bg-zinc-900/90 p-4 border border-zinc-600 backdrop-blur-sm'
                   >
-                    <svg
-                      className='mr-3 h-5 w-5 text-green-400'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M5 13l4 4L19 7'
-                      />
-                    </svg>
-                    <span className='text-zinc-200'>{feature}</span>
+                    <dt className='text-sm font-medium text-zinc-400'>{spec.label}</dt>
+                    <dd className='mt-1 text-lg font-semibold text-white'>{spec.value}</dd>
                   </div>
                 ))}
               </div>
             </div>
 
+            {/* Additional Specifications */}
+            {additionalSpecs.length > 0 && (
+              <div className='space-y-4'>
+                <h3 className='text-xl font-semibold text-white'>詳細規格</h3>
+                <div className='grid gap-2'>
+                  {additionalSpecs.map(([key, value], index) => (
+                    <div
+                      key={index}
+                      className='flex items-center justify-between gap-4 rounded-lg bg-zinc-900/90 p-3 border border-zinc-600 backdrop-blur-sm'
+                    >
+                      <span className='text-zinc-400 flex-shrink-0'>{key}</span>
+                      <span className='text-zinc-200 text-right break-words min-w-0'>{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* 數量選擇 */}
             <div className='space-y-3'>
               <h4 className='text-lg font-medium text-white'>選擇數量</h4>
-              <div className='flex items-center space-x-4'>
+              <div className='flex flex-wrap items-center gap-4'>
                 <div className='flex items-center rounded-lg border border-zinc-600 bg-zinc-800'>
                   <button
                     onClick={decreaseQuantity}
-                    disabled={!product.inStock || quantity <= 1}
+                    disabled={!inStock || quantity <= 1}
                     className={cn(
-                      'flex h-12 w-12 items-center justify-center transition-colors',
-                      product.inStock && quantity > 1
+                      'flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center transition-colors',
+                      inStock && quantity > 1
                         ? 'text-zinc-200 hover:text-white hover:bg-zinc-700'
                         : 'text-zinc-500 cursor-not-allowed',
                     )}
@@ -240,19 +356,19 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                     onChange={handleQuantityChange}
                     min='1'
                     max='99'
-                    disabled={!product.inStock}
+                    disabled={!inStock}
                     className={cn(
-                      'w-16 bg-transparent text-center text-lg font-medium text-white border-none focus:outline-none',
-                      !product.inStock && 'text-zinc-500',
+                      'w-12 sm:w-16 bg-transparent text-center text-lg font-medium text-white border-none focus:outline-none',
+                      !inStock && 'text-zinc-500',
                     )}
                   />
 
                   <button
                     onClick={increaseQuantity}
-                    disabled={!product.inStock || quantity >= 99}
+                    disabled={!inStock || quantity >= 99}
                     className={cn(
-                      'flex h-12 w-12 items-center justify-center transition-colors',
-                      product.inStock && quantity < 99
+                      'flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center transition-colors',
+                      inStock && quantity < 99
                         ? 'text-zinc-200 hover:text-white hover:bg-zinc-700'
                         : 'text-zinc-500 cursor-not-allowed',
                     )}
@@ -263,9 +379,9 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 </div>
 
                 {/* 總價顯示 */}
-                <div className='flex-1'>
+                <div className='flex-1 min-w-0'>
                   <div className='text-sm text-zinc-400'>小計</div>
-                  <div className='text-2xl font-bold text-blue-400'>
+                  <div className='text-xl sm:text-2xl font-bold text-blue-400'>
                     NT$ {(product.price * quantity).toLocaleString()}
                   </div>
                 </div>
@@ -276,36 +392,36 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             <div className='space-y-3'>
               {/* 立即購買 */}
               <motion.button
-                whileHover={{ scale: product.inStock ? 1.02 : 1 }}
-                whileTap={{ scale: product.inStock ? 0.98 : 1 }}
+                whileHover={{ scale: inStock ? 1.02 : 1 }}
+                whileTap={{ scale: inStock ? 0.98 : 1 }}
                 onClick={handleBuyNow}
-                disabled={!product.inStock}
+                disabled={!inStock}
                 className={cn(
                   'flex w-full items-center justify-center space-x-2 rounded-lg px-6 py-4 text-lg font-semibold transition-all duration-200',
-                  product.inStock
+                  inStock
                     ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-lg hover:shadow-blue-500/25'
                     : 'bg-zinc-700 text-zinc-400 cursor-not-allowed border border-zinc-600',
                 )}
               >
                 <IconShoppingCart className='h-5 w-5' />
-                <span>{product.inStock ? '立即購買' : '暫時缺貨'}</span>
+                <span>{inStock ? '立即購買' : '暫時缺貨'}</span>
               </motion.button>
 
               {/* 加入購物車 */}
               <motion.button
-                whileHover={{ scale: product.inStock ? 1.02 : 1 }}
-                whileTap={{ scale: product.inStock ? 0.98 : 1 }}
+                whileHover={{ scale: inStock ? 1.02 : 1 }}
+                whileTap={{ scale: inStock ? 0.98 : 1 }}
                 onClick={handleAddToCart}
-                disabled={!product.inStock}
+                disabled={!inStock}
                 className={cn(
                   'flex w-full items-center justify-center space-x-2 rounded-lg border px-6 py-4 text-lg font-semibold transition-all duration-200',
-                  product.inStock
+                  inStock
                     ? 'border-zinc-600 bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-zinc-500/50 shadow-lg'
                     : 'border-zinc-700 bg-zinc-800 text-zinc-500 cursor-not-allowed',
                 )}
               >
                 <IconShoppingCart className='h-5 w-5' />
-                <span>{product.inStock ? '加入購物車' : '缺貨中'}</span>
+                <span>{inStock ? '加入購物車' : '缺貨中'}</span>
               </motion.button>
 
               {/* 加入願望清單 - 僅登入用戶可見 */}
@@ -358,6 +474,17 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 </div>
               </div>
             </div>
+
+            {/* Product Content (HTML) */}
+            {product.content && (
+              <div className='space-y-4 overflow-hidden'>
+                <h3 className='text-xl font-semibold text-white'>產品介紹</h3>
+                <div
+                  className='rounded-lg bg-zinc-900/90 p-4 sm:p-6 border border-zinc-600 overflow-x-auto [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-blue-400 [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:first:mt-0 [&_p]:text-zinc-300 [&_p]:leading-relaxed [&_p]:mb-3 [&_p]:break-words [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_ul]:mb-3 [&_li]:text-zinc-300 [&_li]:break-words'
+                  dangerouslySetInnerHTML={{ __html: product.content }}
+                />
+              </div>
+            )}
           </motion.div>
         </div>
       </div>

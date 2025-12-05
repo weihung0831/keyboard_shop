@@ -1,14 +1,22 @@
 'use client';
 import { cn } from '@/lib/utils';
-import { IconMenu2, IconX, IconShoppingCart, IconUser, IconSearch } from '@tabler/icons-react';
+import {
+  IconMenu2,
+  IconX,
+  IconShoppingCart,
+  IconUser,
+  IconSearch,
+  IconLoader2,
+} from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
-import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import type { Product } from '@/types/product';
-import productsData from '@/data/products.json';
+import type { SearchSuggestion } from '@/types/product';
+import { apiGetSearchSuggestions } from '@/lib/api';
 
 export function SimpleNavbarWithHoverEffects() {
   return <Navbar />;
@@ -35,7 +43,8 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchSuggestion[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const { totalItems, toggleCart } = useCart();
   const { isAuthenticated, currentUser, logout } = useAuth();
@@ -55,24 +64,33 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
     router.push('/');
   };
 
-  // 搜尋功能
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
+  // 搜尋功能 - 使用 API
+  const searchProducts = useCallback(async (query: string) => {
+    if (query.trim().length < 2) {
       setSearchResults([]);
       return;
     }
 
-    const products = productsData as Product[];
-    const filtered = products.filter(
-      product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.switches.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+    setIsSearching(true);
+    try {
+      const results = await apiGetSearchSuggestions(query);
+      setSearchResults(results.slice(0, 5));
+    } catch (error) {
+      console.error('搜尋失敗:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
 
-    setSearchResults(filtered.slice(0, 5)); // 最多顯示 5 個結果
-  }, [searchQuery]);
+  // debounce 搜尋
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchProducts(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchProducts]);
 
   // 點擊外部關閉搜尋
   useEffect(() => {
@@ -166,9 +184,13 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
                 </div>
 
                 {/* 搜尋結果 */}
-                {searchQuery && (
+                {searchQuery.length >= 2 && (
                   <div className='max-h-96 overflow-y-auto'>
-                    {searchResults.length > 0 ? (
+                    {isSearching ? (
+                      <div className='px-4 py-8 text-center'>
+                        <IconLoader2 className='h-6 w-6 text-blue-400 animate-spin mx-auto' />
+                      </div>
+                    ) : searchResults.length > 0 ? (
                       <div className='border-t border-zinc-200 dark:border-zinc-700'>
                         {searchResults.map(product => (
                           <button
@@ -176,17 +198,25 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
                             onClick={() => handleProductClick(product.id)}
                             className='w-full px-4 py-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left flex items-center space-x-3'
                           >
-                            <div className='flex-1'>
-                              <p className='text-sm font-medium text-neutral-900 dark:text-white'>
+                            {product.image_url && (
+                              <div className='relative h-12 w-12 flex-shrink-0 rounded-md overflow-hidden bg-zinc-100 dark:bg-zinc-800'>
+                                <Image
+                                  src={product.image_url}
+                                  alt={product.name}
+                                  fill
+                                  className='object-cover'
+                                  sizes='48px'
+                                />
+                              </div>
+                            )}
+                            <div className='flex-1 min-w-0'>
+                              <p className='text-sm font-medium text-neutral-900 dark:text-white truncate'>
                                 {product.name}
                               </p>
-                              <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
-                                {product.category} • {product.switches}
+                              <p className='text-sm font-semibold text-blue-600 dark:text-blue-400 mt-1'>
+                                NT$ {product.price.toLocaleString()}
                               </p>
                             </div>
-                            <p className='text-sm font-semibold text-blue-600 dark:text-blue-400'>
-                              NT$ {product.price.toLocaleString()}
-                            </p>
                           </button>
                         ))}
                       </div>
@@ -282,7 +312,8 @@ const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] })
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchSuggestion[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const { totalItems, toggleCart } = useCart();
   const { isAuthenticated, currentUser, logout } = useAuth();
@@ -303,24 +334,33 @@ const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] })
     router.push('/');
   };
 
-  // 搜尋功能
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
+  // 搜尋功能 - 使用 API
+  const searchProducts = useCallback(async (query: string) => {
+    if (query.trim().length < 2) {
       setSearchResults([]);
       return;
     }
 
-    const products = productsData as Product[];
-    const filtered = products.filter(
-      product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.switches.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+    setIsSearching(true);
+    try {
+      const results = await apiGetSearchSuggestions(query);
+      setSearchResults(results.slice(0, 5));
+    } catch (error) {
+      console.error('搜尋失敗:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
 
-    setSearchResults(filtered.slice(0, 5));
-  }, [searchQuery]);
+  // debounce 搜尋
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchProducts(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchProducts]);
 
   // 點擊外部關閉搜尋
   useEffect(() => {
@@ -393,25 +433,39 @@ const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] })
                     </div>
 
                     {/* 搜尋結果 */}
-                    {searchQuery && (
+                    {searchQuery.length >= 2 && (
                       <div className='max-h-80 overflow-y-auto'>
-                        {searchResults.length > 0 ? (
+                        {isSearching ? (
+                          <div className='px-4 py-8 text-center'>
+                            <IconLoader2 className='h-6 w-6 text-blue-400 animate-spin mx-auto' />
+                          </div>
+                        ) : searchResults.length > 0 ? (
                           <div className='border-t border-zinc-200 dark:border-zinc-700'>
                             {searchResults.map(product => (
                               <button
                                 key={product.id}
                                 onClick={() => handleProductClick(product.id)}
-                                className='w-full px-4 py-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left'
+                                className='w-full px-4 py-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left flex items-center space-x-3'
                               >
-                                <p className='text-sm font-medium text-neutral-900 dark:text-white'>
-                                  {product.name}
-                                </p>
-                                <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
-                                  {product.category} • {product.switches}
-                                </p>
-                                <p className='text-sm font-semibold text-blue-600 dark:text-blue-400 mt-1'>
-                                  NT$ {product.price.toLocaleString()}
-                                </p>
+                                {product.image_url && (
+                                  <div className='relative h-10 w-10 flex-shrink-0 rounded-md overflow-hidden bg-zinc-100 dark:bg-zinc-800'>
+                                    <Image
+                                      src={product.image_url}
+                                      alt={product.name}
+                                      fill
+                                      className='object-cover'
+                                      sizes='40px'
+                                    />
+                                  </div>
+                                )}
+                                <div className='flex-1 min-w-0'>
+                                  <p className='text-sm font-medium text-neutral-900 dark:text-white truncate'>
+                                    {product.name}
+                                  </p>
+                                  <p className='text-sm font-semibold text-blue-600 dark:text-blue-400 mt-1'>
+                                    NT$ {product.price.toLocaleString()}
+                                  </p>
+                                </div>
                               </button>
                             ))}
                           </div>

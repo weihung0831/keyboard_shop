@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   IconArrowRight,
@@ -9,12 +10,14 @@ import {
   IconPhone,
   IconMail,
   IconMapPin,
+  IconLoader2,
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { InfiniteMovingCards } from './infinite-moving-cards';
 import { CTAWithDashedGridLines } from '@/components/ui/CTAWithDashedGridLines';
 import { ProductCard } from '@/components/ui/product-card';
-import productsData from '@/data/products.json';
+import { apiGetProducts } from '@/lib/api';
+import type { Product } from '@/types/product';
 import { useRouter } from 'next/navigation';
 
 // 主視覺區塊組件 - 鍵盤商店首頁的核心展示區域
@@ -125,11 +128,26 @@ const HeroSection = () => {
   );
 };
 
-// 精選產品展示區塊 - 使用實際產品數據和 ProductCard 元件
+// 精選產品展示區塊 - 使用 API 取得產品數據
 const FeaturedProducts = () => {
   const router = useRouter();
-  // 從實際產品數據中選取精選商品（前6個產品）
-  const featuredProducts = productsData.slice(0, 6);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 從 API 取得精選商品
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await apiGetProducts({ per_page: 6 });
+        setProducts(response.data);
+      } catch (error) {
+        console.error('載入產品失敗:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const handleProductClick = (productId: number) => {
     router.push(`/products/${productId}`);
@@ -151,19 +169,25 @@ const FeaturedProducts = () => {
           </p>
         </motion.div>
 
-        <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-8'>
-          {featuredProducts.map((product, index) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <ProductCard product={product} onClick={() => handleProductClick(product.id)} />
-            </motion.div>
-          ))}
-        </div>
+        {loading ? (
+          <div className='flex justify-center items-center py-20'>
+            <IconLoader2 className='h-10 w-10 text-blue-400 animate-spin' />
+          </div>
+        ) : (
+          <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-8'>
+            {products.map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <ProductCard product={product} onClick={() => handleProductClick(product.id)} />
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         {/* 查看更多按鈕 */}
         <motion.div

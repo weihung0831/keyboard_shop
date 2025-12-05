@@ -1,26 +1,34 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ProductCard } from '@/components/ui/product-card';
-import type { Product } from '@/types/product';
-import productsData from '@/data/products.json';
+import type { Product, ProductCategory } from '@/types/product';
+import { apiGetProducts, apiGetCategories } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
-const categories = ['全部', '無線鍵盤', '有線鍵盤', '靜電容鍵盤', '電競鍵盤'];
 const PRODUCTS_PER_PAGE = 8;
 
 function ProductsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('全部');
-  const [sortBy, setSortBy] = useState('name');
-  const [currentPage, setCurrentPage] = useState(1);
+  // 狀態管理
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Initialize state from URL parameters
+  // 篩選與分頁狀態
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState('created_at_desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+
+  // 從 URL 參數初始化狀態
   useEffect(() => {
     const page = searchParams.get('page');
     const category = searchParams.get('category');
@@ -28,62 +36,81 @@ function ProductsContent() {
     const sort = searchParams.get('sort');
 
     if (page) setCurrentPage(parseInt(page));
-    if (category) setSelectedCategory(category);
+    if (category) setSelectedCategoryId(parseInt(category));
     if (search) setSearchTerm(search);
     if (sort) setSortBy(sort);
   }, [searchParams]);
 
-  const products = productsData as Product[];
-
-  const { paginatedProducts, totalPages, totalResults } = useMemo(() => {
-    // Filter products
-    const filtered = products.filter(product => {
-      const matchesSearch =
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === '全部' || product.category === selectedCategory;
-
-      return matchesSearch && matchesCategory;
-    });
-
-    // Sort products
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'price-low':
-          return a.price - b.price;
-        case 'price-high':
-          return b.price - a.price;
-        case 'category':
-          return a.category.localeCompare(b.category);
-        default:
-          return 0;
+  // 載入分類列表
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await apiGetCategories();
+        setCategories(data);
+      } catch (err) {
+        console.error('載入分類失敗:', err);
       }
-    });
-
-    // Calculate pagination
-    const totalPages = Math.ceil(filtered.length / PRODUCTS_PER_PAGE);
-    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-    const endIndex = startIndex + PRODUCTS_PER_PAGE;
-    const paginatedProducts = filtered.slice(startIndex, endIndex);
-
-    return {
-      filteredProducts: filtered,
-      paginatedProducts,
-      totalPages,
-      totalResults: filtered.length,
     };
-  }, [products, searchTerm, selectedCategory, sortBy, currentPage]);
+    loadCategories();
+  }, []);
 
-  // Update URL parameters - 使用 useCallback 記憶化
+  // 載入商品列表
+  const loadProducts = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // 轉換排序參數格式
+      let apiSort: 'price_asc' | 'price_desc' | 'created_at_asc' | 'created_at_desc' | undefined;
+      switch (sortBy) {
+        case 'price-low':
+          apiSort = 'price_asc';
+          break;
+        case 'price-high':
+          apiSort = 'price_desc';
+          break;
+        case 'newest':
+          apiSort = 'created_at_desc';
+          break;
+        case 'oldest':
+          apiSort = 'created_at_asc';
+          break;
+        default:
+          apiSort = 'created_at_desc';
+      }
+
+      const response = await apiGetProducts({
+        page: currentPage,
+        per_page: PRODUCTS_PER_PAGE,
+        category_id: selectedCategoryId || undefined,
+        keyword: searchTerm || undefined,
+        sort: apiSort,
+      });
+
+      setProducts(response.data);
+      setTotalPages(response.meta.last_page);
+      setTotalResults(response.meta.total);
+    } catch (err) {
+      console.error('載入商品失敗:', err);
+      setError('載入商品失敗，請稍後再試');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, selectedCategoryId, searchTerm, sortBy]);
+
+  // 當篩選條件改變時重新載入商品
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  // 更新 URL 參數
   const updateURL = useCallback(
-    (page: number, category: string, search: string, sort: string) => {
+    (page: number, categoryId: number | null, search: string, sort: string) => {
       const params = new URLSearchParams();
       if (page > 1) params.set('page', page.toString());
-      if (category !== '全部') params.set('category', category);
+      if (categoryId) params.set('category', categoryId.toString());
       if (search) params.set('search', search);
-      if (sort !== 'name') params.set('sort', sort);
+      if (sort !== 'created_at_desc') params.set('sort', sort);
 
       const url = params.toString() ? `?${params.toString()}` : '/products';
       router.replace(url, { scroll: false });
@@ -91,34 +118,49 @@ function ProductsContent() {
     [router],
   );
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
+  // 處理搜尋
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
     setCurrentPage(1);
-    updateURL(1, selectedCategory, searchTerm, sortBy);
-  }, [searchTerm, selectedCategory, sortBy, updateURL]);
+    updateURL(1, selectedCategoryId, value, sortBy);
+  };
 
+  // 處理分類篩選
+  const handleCategoryChange = (categoryId: number | null) => {
+    setSelectedCategoryId(categoryId);
+    setCurrentPage(1);
+    updateURL(1, categoryId, searchTerm, sortBy);
+  };
+
+  // 處理排序
+  const handleSortChange = (sort: string) => {
+    setSortBy(sort);
+    setCurrentPage(1);
+    updateURL(1, selectedCategoryId, searchTerm, sort);
+  };
+
+  // 處理分頁
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    updateURL(page, selectedCategoryId, searchTerm, sortBy);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 處理商品點擊
   const handleProductClick = (productId: number) => {
     router.push(`/products/${productId}`);
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
-  };
-
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
-  };
-
-  const handleSortChange = (sort: string) => {
-    setSortBy(sort);
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    updateURL(page, selectedCategory, searchTerm, sortBy);
-    // Smooth scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  // 搜尋防抖
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (debouncedSearchTerm !== searchTerm) {
+        setDebouncedSearchTerm(searchTerm);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm, debouncedSearchTerm]);
 
   return (
     <div className='min-h-screen bg-black'>
@@ -160,18 +202,29 @@ function ProductsContent() {
 
           {/* Category Filters */}
           <div className='flex flex-wrap justify-center gap-2'>
+            <button
+              onClick={() => handleCategoryChange(null)}
+              className={cn(
+                'rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 shadow-lg',
+                selectedCategoryId === null
+                  ? 'bg-blue-600 text-white shadow-blue-500/25'
+                  : 'bg-zinc-800/90 text-zinc-200 hover:bg-zinc-700 hover:text-blue-400 border border-zinc-600',
+              )}
+            >
+              全部
+            </button>
             {categories.map(category => (
               <button
-                key={category}
-                onClick={() => handleCategoryChange(category)}
+                key={category.id}
+                onClick={() => handleCategoryChange(category.id)}
                 className={cn(
                   'rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 shadow-lg',
-                  selectedCategory === category
+                  selectedCategoryId === category.id
                     ? 'bg-blue-600 text-white shadow-blue-500/25'
                     : 'bg-zinc-800/90 text-zinc-200 hover:bg-zinc-700 hover:text-blue-400 border border-zinc-600',
                 )}
               >
-                {category}
+                {category.name}
               </button>
             ))}
           </div>
@@ -186,10 +239,10 @@ function ProductsContent() {
                 'focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30',
               )}
             >
-              <option value='name'>按名稱排序</option>
+              <option value='created_at_desc'>最新上架</option>
               <option value='price-low'>價格：低到高</option>
               <option value='price-high'>價格：高到低</option>
-              <option value='category'>按類別排序</option>
+              <option value='oldest'>最早上架</option>
             </select>
           </div>
         </motion.div>
@@ -201,7 +254,9 @@ function ProductsContent() {
           transition={{ delay: 0.3 }}
           className='mb-6 text-center text-zinc-300'
         >
-          {totalResults > 0 ? (
+          {isLoading ? (
+            '載入中...'
+          ) : totalResults > 0 ? (
             <>
               顯示第 {(currentPage - 1) * PRODUCTS_PER_PAGE + 1}-
               {Math.min(currentPage * PRODUCTS_PER_PAGE, totalResults)} 個商品，共 {totalResults}{' '}
@@ -212,15 +267,48 @@ function ProductsContent() {
           )}
         </motion.div>
 
-        {/* Products Grid */}
-        {paginatedProducts.length > 0 ? (
+        {/* Error Message */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className='mb-6 text-center text-red-400'
+          >
+            {error}
+            <button
+              onClick={loadProducts}
+              className='ml-2 text-blue-400 hover:text-blue-300 underline'
+            >
+              重試
+            </button>
+          </motion.div>
+        )}
+
+        {/* Loading State */}
+        {isLoading ? (
+          <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
+            {[...Array(PRODUCTS_PER_PAGE)].map((_, index) => (
+              <div
+                key={index}
+                className='h-[480px] rounded-xl border border-zinc-600 bg-zinc-900/90 animate-pulse'
+              >
+                <div className='h-48 bg-zinc-800 rounded-t-xl' />
+                <div className='p-5 space-y-3'>
+                  <div className='h-6 bg-zinc-800 rounded w-3/4' />
+                  <div className='h-4 bg-zinc-800 rounded w-full' />
+                  <div className='h-4 bg-zinc-800 rounded w-2/3' />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : products.length > 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className='grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
           >
-            {paginatedProducts.map((product, index) => (
+            {products.map((product, index) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -258,7 +346,7 @@ function ProductsContent() {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && paginatedProducts.length > 0 && (
+        {totalPages > 1 && products.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

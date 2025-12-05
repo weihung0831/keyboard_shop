@@ -15,6 +15,45 @@ export interface ProductCardProps {
 export const ProductCard = ({ product, onClick }: ProductCardProps) => {
   const { addToCart } = useCart();
 
+  // 取得產品圖片（優先使用 primary_image，否則使用第一張圖片）
+  const firstImage = product.images?.[0];
+  const productImage =
+    product.primary_image || firstImage?.url || firstImage?.image_url || '/placeholder.png';
+
+  // 從 specifications 取得規格資訊（支援中英文 key）
+  const specs = product.specifications || {};
+  const switches = specs.switches || specs['軸體'] || specs['軸體類型'] || '-';
+  const layout = specs.layout || specs['配置'] || specs['配列'] || '-';
+  const wireless =
+    specs.wireless === 'true' ||
+    specs['無線'] === '是' ||
+    specs['連接方式']?.includes('藍牙') ||
+    specs['連接方式']?.includes('無線') ||
+    false;
+
+  // 判斷是否有庫存
+  const inStock = product.stock > 0;
+
+  // 取得分類名稱
+  const categoryName = product.category?.name || '未分類';
+
+  // 從 specifications 取得特色
+  const features: string[] = [];
+  if (specs.features) {
+    try {
+      const parsed =
+        typeof specs.features === 'string' ? JSON.parse(specs.features) : specs.features;
+      if (Array.isArray(parsed)) {
+        features.push(...parsed);
+      }
+    } catch {
+      // 如果解析失敗，嘗試用逗號分隔
+      if (typeof specs.features === 'string') {
+        features.push(...specs.features.split(',').map(f => f.trim()));
+      }
+    }
+  }
+
   /**
    * 處理加入購物車按鈕點擊事件
    */
@@ -37,7 +76,7 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
       className={cn(
         'group relative rounded-xl border border-zinc-600 bg-zinc-900/90 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:border-zinc-500',
         'hover:shadow-blue-500/10',
-        'h-[520px] flex flex-col', // Fixed height with flex layout (increased for button)
+        'h-[480px] flex flex-col',
       )}
     >
       {/* Product Image - Fixed height */}
@@ -46,7 +85,7 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
         onClick={handleCardClick}
       >
         <Image
-          src={product.image}
+          src={productImage}
           alt={product.name}
           fill
           className='object-cover transition-transform duration-300 group-hover:scale-105'
@@ -54,7 +93,7 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
         />
         {/* Stock Status Badge */}
         <div className='absolute top-3 right-3'>
-          {product.inStock ? (
+          {inStock ? (
             <span className='rounded-full bg-green-500/80 px-2 py-1 text-xs font-medium text-white border border-green-400'>
               現貨
             </span>
@@ -67,13 +106,21 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
         {/* Category Badge */}
         <div className='absolute top-3 left-3'>
           <span className='rounded-full bg-purple-500/80 px-2 py-1 text-xs font-medium text-white border border-purple-400'>
-            {product.category}
+            {categoryName}
           </span>
         </div>
+        {/* Discount Badge */}
+        {product.original_price && product.original_price > product.price && (
+          <div className='absolute bottom-3 left-3'>
+            <span className='rounded-full bg-red-500/90 px-2 py-1 text-xs font-medium text-white border border-red-400'>
+              {Math.round((1 - product.price / product.original_price) * 100)}% OFF
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Product Info - Flex grow to fill remaining space */}
-      <div className='flex flex-col flex-grow p-6'>
+      <div className='flex flex-col flex-grow p-5'>
         {/* Product Name - Fixed height with clamping */}
         <h3
           className='mb-2 text-lg font-semibold text-white line-clamp-2 group-hover:text-blue-400 transition-colors h-14 flex items-start cursor-pointer'
@@ -88,34 +135,36 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
         </div>
 
         {/* Product Features - Fixed height */}
-        <div className='mb-3 h-8 flex items-start'>
-          <div className='flex flex-wrap gap-1'>
-            {product.features.slice(0, 2).map((feature, index) => (
-              <span
-                key={index}
-                className='rounded-md bg-zinc-800 px-2 py-1 text-xs text-zinc-200 border border-zinc-600 whitespace-nowrap'
-              >
-                {feature}
-              </span>
-            ))}
-            {product.features.length > 2 && (
-              <span className='rounded-md bg-zinc-800 px-2 py-1 text-xs text-zinc-200 border border-zinc-600'>
-                +{product.features.length - 2}
-              </span>
-            )}
+        {features.length > 0 && (
+          <div className='mb-3 h-8 flex items-start'>
+            <div className='flex flex-wrap gap-1'>
+              {features.slice(0, 2).map((feature, index) => (
+                <span
+                  key={index}
+                  className='rounded-md bg-zinc-800 px-2 py-1 text-xs text-zinc-200 border border-zinc-600 whitespace-nowrap'
+                >
+                  {feature}
+                </span>
+              ))}
+              {features.length > 2 && (
+                <span className='rounded-md bg-zinc-800 px-2 py-1 text-xs text-zinc-200 border border-zinc-600'>
+                  +{features.length - 2}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Switch Type and Layout - Fixed height */}
         <div className='mb-4 h-12 flex items-start'>
           <div className='grid grid-cols-2 gap-2 text-sm w-full'>
             <div className='min-h-0'>
               <span className='text-zinc-400'>軸體：</span>
-              <span className='text-zinc-200 block truncate'>{product.switches}</span>
+              <span className='text-zinc-200 block truncate'>{switches}</span>
             </div>
             <div className='min-h-0'>
               <span className='text-zinc-400'>配列：</span>
-              <span className='text-zinc-200 block truncate'>{product.layout}</span>
+              <span className='text-zinc-200 block truncate'>{layout}</span>
             </div>
           </div>
         </div>
@@ -125,10 +174,17 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
 
         {/* Price and Action Button - Fixed at bottom */}
         <div className='flex items-center justify-between mt-auto'>
-          <div className='text-xl font-bold text-blue-400'>
-            NT$ {product.price.toLocaleString()}
+          <div className='flex items-center gap-2'>
+            <span className='text-xl font-bold text-blue-400'>
+              NT$ {product.price.toLocaleString()}
+            </span>
+            {product.original_price && product.original_price > product.price && (
+              <span className='text-sm text-zinc-500 line-through'>
+                NT$ {product.original_price.toLocaleString()}
+              </span>
+            )}
           </div>
-          {product.wireless && (
+          {wireless && (
             <div className='flex items-center text-sm text-zinc-300'>
               <svg
                 className='mr-1 h-4 w-4 flex-shrink-0'
@@ -154,19 +210,17 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleAddToCart}
-            disabled={!product.inStock}
+            disabled={!inStock}
             className={cn(
               'flex w-full items-center justify-center space-x-2 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50',
-              product.inStock
+              inStock
                 ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-blue-500/25 hover:from-blue-500 hover:to-purple-500'
                 : 'bg-zinc-700 text-zinc-400 cursor-not-allowed shadow-none',
             )}
-            aria-label={
-              product.inStock ? `加入 ${product.name} 到購物車` : `${product.name} 目前缺貨`
-            }
+            aria-label={inStock ? `加入 ${product.name} 到購物車` : `${product.name} 目前缺貨`}
           >
             <IconShoppingCart className='h-4 w-4' />
-            <span>{product.inStock ? '加入購物車' : '缺貨'}</span>
+            <span>{inStock ? '加入購物車' : '缺貨'}</span>
           </motion.button>
         </div>
       </div>

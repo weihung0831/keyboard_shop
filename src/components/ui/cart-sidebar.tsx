@@ -43,9 +43,15 @@ function CartItemComponent({ item, onUpdateQuantity, onRemove }: CartItemCompone
     >
       {/* 商品圖片 */}
       <div className='relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-zinc-700'>
-        <Image src={product.image} alt={product.name} fill className='object-cover' sizes='64px' />
+        <Image
+          src={product.primary_image || '/placeholder.png'}
+          alt={product.name}
+          fill
+          className='object-cover'
+          sizes='64px'
+        />
         {/* 缺貨遮罩 */}
-        {!product.inStock && (
+        {product.stock <= 0 && (
           <div className='absolute inset-0 flex items-center justify-center bg-black/60'>
             <span className='text-xs font-medium text-red-400'>缺貨</span>
           </div>
@@ -56,7 +62,7 @@ function CartItemComponent({ item, onUpdateQuantity, onRemove }: CartItemCompone
       <div className='flex-1 space-y-2'>
         <div>
           <h4 className='text-sm font-medium text-white line-clamp-2'>{product.name}</h4>
-          <p className='text-xs text-zinc-400'>{product.category}</p>
+          <p className='text-xs text-zinc-400'>{product.category?.name || '未分類'}</p>
         </div>
 
         {/* 數量控制和價格 */}
@@ -64,10 +70,10 @@ function CartItemComponent({ item, onUpdateQuantity, onRemove }: CartItemCompone
           <div className='flex items-center space-x-2'>
             <button
               onClick={() => onUpdateQuantity(product.id, quantity - 1)}
-              disabled={!product.inStock}
+              disabled={product.stock <= 0}
               className={cn(
                 'flex h-8 w-8 items-center justify-center rounded-md border transition-colors',
-                product.inStock
+                product.stock > 0
                   ? 'border-zinc-600 bg-zinc-700 text-zinc-200 hover:bg-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30'
                   : 'border-zinc-700 bg-zinc-800 text-zinc-500 cursor-not-allowed',
               )}
@@ -82,10 +88,10 @@ function CartItemComponent({ item, onUpdateQuantity, onRemove }: CartItemCompone
 
             <button
               onClick={() => onUpdateQuantity(product.id, quantity + 1)}
-              disabled={!product.inStock}
+              disabled={product.stock <= 0}
               className={cn(
                 'flex h-8 w-8 items-center justify-center rounded-md border transition-colors',
-                product.inStock
+                product.stock > 0
                   ? 'border-zinc-600 bg-zinc-700 text-zinc-200 hover:bg-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30'
                   : 'border-zinc-700 bg-zinc-800 text-zinc-500 cursor-not-allowed',
               )}

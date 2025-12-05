@@ -201,7 +201,7 @@ export default function OrderSuccessPage() {
                   <div className='relative h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-800'>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={item.product.image}
+                      src={item.product.primary_image || '/placeholder.png'}
                       alt={item.product.name}
                       className='h-full w-full object-cover'
                     />
