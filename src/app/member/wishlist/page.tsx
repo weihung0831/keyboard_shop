@@ -5,14 +5,21 @@
  * 顯示會員收藏的商品
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useCart } from '@/contexts/CartContext';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { IconHeart, IconTrash, IconShoppingCart, IconArrowLeft } from '@tabler/icons-react';
+import {
+  IconHeart,
+  IconTrash,
+  IconShoppingCart,
+  IconArrowLeft,
+  IconAlertTriangle,
+  IconX,
+} from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 
 export default function MemberWishlistPage() {
@@ -20,6 +27,7 @@ export default function MemberWishlistPage() {
   const { items, totalItems, removeFromWishlist, clearWishlist } = useWishlist();
   const { addToCart } = useCart();
   const router = useRouter();
+  const [showClearModal, setShowClearModal] = useState(false);
 
   const handleAddToCart = (productId: number) => {
     const item = items.find(item => item.product.id === productId);
@@ -33,9 +41,12 @@ export default function MemberWishlistPage() {
   };
 
   const handleClearWishlist = () => {
-    if (window.confirm('確定要清空願望清單嗎？')) {
-      clearWishlist();
-    }
+    setShowClearModal(true);
+  };
+
+  const confirmClearWishlist = () => {
+    clearWishlist();
+    setShowClearModal(false);
   };
 
   if (isLoading) {
@@ -195,6 +206,70 @@ export default function MemberWishlistPage() {
           )}
         </motion.div>
       </div>
+
+      {/* 清空願望清單確認 Modal */}
+      <AnimatePresence>
+        {showClearModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className='fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm'
+            onClick={() => setShowClearModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className='relative w-full max-w-md mx-4 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl'
+              onClick={e => e.stopPropagation()}
+            >
+              {/* 關閉按鈕 */}
+              <button
+                onClick={() => setShowClearModal(false)}
+                className='absolute top-4 right-4 p-1 text-zinc-400 hover:text-white transition-colors'
+              >
+                <IconX size={20} />
+              </button>
+
+              {/* Modal 內容 */}
+              <div className='p-6'>
+                {/* 圖示 */}
+                <div className='flex justify-center mb-4'>
+                  <div className='flex h-16 w-16 items-center justify-center rounded-full bg-yellow-500/10'>
+                    <IconAlertTriangle className='h-8 w-8 text-yellow-500' />
+                  </div>
+                </div>
+
+                {/* 標題和說明 */}
+                <div className='text-center mb-6'>
+                  <h3 className='text-xl font-semibold text-white mb-2'>清空願望清單</h3>
+                  <p className='text-zinc-400'>
+                    確定要清空願望清單嗎？此操作將移除所有 {totalItems} 個收藏的商品，且無法復原。
+                  </p>
+                </div>
+
+                {/* 按鈕 */}
+                <div className='flex gap-3'>
+                  <button
+                    onClick={() => setShowClearModal(false)}
+                    className='flex-1 px-4 py-3 rounded-lg border border-zinc-600 text-zinc-300 font-medium hover:bg-zinc-800 transition-colors'
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={confirmClearWishlist}
+                    className='flex-1 px-4 py-3 rounded-lg bg-red-600 text-white font-medium hover:bg-red-500 transition-colors'
+                  >
+                    確定清空
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

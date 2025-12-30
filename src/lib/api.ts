@@ -21,6 +21,23 @@ import type {
   SearchSuggestion,
   SearchSuggestionsResponse,
 } from '@/types/product';
+import type {
+  ApiCart,
+  CartApiResponse,
+  AddToCartRequest,
+  UpdateCartItemRequest,
+} from '@/types/cart';
+import { CART_SESSION_KEY } from '@/types/cart';
+import type {
+  Order,
+  OrdersApiResponse,
+  OrderApiResponse,
+  OrderStatsApiResponse,
+  CancelOrderApiResponse,
+  CreateOrderRequest,
+  OrdersQueryParams,
+  OrderStats,
+} from '@/types/order';
 
 // ==================== API 設定 ====================
 
@@ -285,6 +302,156 @@ export const apiGetCategory = async (idOrSlug: string | number): Promise<Product
   const response = await api.get<{ message: string; data: ProductCategory }>(
     `/categories/${idOrSlug}`,
   );
+  return response.data.data;
+};
+
+// ==================== Session ID 管理 ====================
+
+/**
+ * 取得或建立 Session ID（用於訪客購物車）
+ */
+export const getOrCreateSessionId = (): string => {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  let sessionId = localStorage.getItem(CART_SESSION_KEY);
+  if (!sessionId) {
+    // 產生新的 Session ID（UUID v4 格式）
+    sessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+    localStorage.setItem(CART_SESSION_KEY, sessionId);
+  }
+
+  return sessionId;
+};
+
+/**
+ * 清除 Session ID
+ */
+export const clearSessionId = (): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(CART_SESSION_KEY);
+  }
+};
+
+// ==================== 購物車 API ====================
+
+/**
+ * 建立帶有 Session ID 的請求設定
+ */
+const getCartRequestConfig = () => {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+
+  // 如果沒有登入，使用 Session ID
+  if (!token) {
+    const sessionId = getOrCreateSessionId();
+    headers['X-Session-Id'] = sessionId;
+  }
+
+  return { headers };
+};
+
+/**
+ * 取得購物車
+ */
+export const apiGetCart = async (): Promise<ApiCart> => {
+  const response = await api.get<CartApiResponse>('/cart', getCartRequestConfig());
+  return response.data.data;
+};
+
+/**
+ * 加入購物車
+ */
+export const apiAddToCart = async (data: AddToCartRequest): Promise<ApiCart> => {
+  const response = await api.post<CartApiResponse>('/cart/items', data, getCartRequestConfig());
+  return response.data.data;
+};
+
+/**
+ * 更新購物車項目數量
+ */
+export const apiUpdateCartItem = async (
+  itemId: number,
+  data: UpdateCartItemRequest,
+): Promise<ApiCart> => {
+  const response = await api.put<CartApiResponse>(
+    `/cart/items/${itemId}`,
+    data,
+    getCartRequestConfig(),
+  );
+  return response.data.data;
+};
+
+/**
+ * 移除購物車項目
+ */
+export const apiRemoveCartItem = async (itemId: number): Promise<ApiCart> => {
+  const response = await api.delete<CartApiResponse>(
+    `/cart/items/${itemId}`,
+    getCartRequestConfig(),
+  );
+  return response.data.data;
+};
+
+/**
+ * 清空購物車
+ */
+export const apiClearCart = async (): Promise<void> => {
+  await api.delete('/cart', getCartRequestConfig());
+};
+
+/**
+ * 合併購物車（登入後呼叫）
+ */
+export const apiMergeCart = async (sessionId: string): Promise<ApiCart> => {
+  const response = await api.post<CartApiResponse>('/cart/merge', { session_id: sessionId });
+  return response.data.data;
+};
+
+// ==================== 訂單 API ====================
+
+/**
+ * 取得訂單列表
+ */
+export const apiGetOrders = async (params?: OrdersQueryParams): Promise<OrdersApiResponse> => {
+  const response = await api.get<OrdersApiResponse>('/orders', { params });
+  return response.data;
+};
+
+/**
+ * 取得訂單統計
+ */
+export const apiGetOrderStats = async (): Promise<OrderStats> => {
+  const response = await api.get<OrderStatsApiResponse>('/orders/stats');
+  return response.data.data;
+};
+
+/**
+ * 建立訂單
+ */
+export const apiCreateOrder = async (data: CreateOrderRequest): Promise<Order> => {
+  const response = await api.post<OrderApiResponse>('/orders', data);
+  return response.data.data;
+};
+
+/**
+ * 取得訂單詳情
+ */
+export const apiGetOrder = async (orderId: number): Promise<Order> => {
+  const response = await api.get<OrderApiResponse>(`/orders/${orderId}`);
+  return response.data.data;
+};
+
+/**
+ * 取消訂單
+ */
+export const apiCancelOrder = async (orderId: number): Promise<CancelOrderApiResponse['data']> => {
+  const response = await api.put<CancelOrderApiResponse>(`/orders/${orderId}/cancel`);
   return response.data.data;
 };
 

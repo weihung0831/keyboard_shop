@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { OrderConfirmModal } from '@/components/ui/order-confirm-modal';
+import { apiCreateOrder } from '@/lib/api';
+import type { ShippingMethod } from '@/types/order';
 
 /**
  * 收件資訊表單資料介面
@@ -23,12 +26,17 @@ interface ShippingInfo {
 /**
  * 運送方式選項
  */
-const SHIPPING_METHODS = [
+const SHIPPING_METHODS: {
+  id: ShippingMethod;
+  name: string;
+  description: string;
+  price: number;
+}[] = [
   {
     id: 'standard',
     name: '標準宅配',
     description: '3-5 個工作天送達',
-    price: 0,
+    price: 60,
   },
   {
     id: 'express',
@@ -37,12 +45,12 @@ const SHIPPING_METHODS = [
     price: 150,
   },
   {
-    id: 'convenience',
-    name: '超商取貨',
+    id: 'store_pickup',
+    name: '門市取貨',
     description: '3-5 個工作天送達，可至超商取貨',
-    price: 60,
+    price: 0,
   },
-] as const;
+];
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -59,7 +67,7 @@ export default function CheckoutPage() {
     postalCode: '',
   });
 
-  const [selectedShipping, setSelectedShipping] = useState<string>(SHIPPING_METHODS[0].id);
+  const [selectedShipping, setSelectedShipping] = useState<ShippingMethod>(SHIPPING_METHODS[0].id);
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingInfo, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -97,6 +105,53 @@ export default function CheckoutPage() {
             >
               前往選購商品
             </button>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果未登入，提示用戶登入
+  if (!currentUser) {
+    return (
+      <div className='min-h-screen bg-black'>
+        <div className='container mx-auto px-4 py-24'>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className='max-w-2xl mx-auto text-center'
+          >
+            <div className='mb-8 h-32 w-32 mx-auto rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-600'>
+              <svg
+                className='h-16 w-16 text-zinc-400'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
+                />
+              </svg>
+            </div>
+            <h1 className='text-3xl font-bold text-white mb-4'>請先登入</h1>
+            <p className='text-zinc-300 mb-8'>您需要登入會員才能完成結帳</p>
+            <div className='flex gap-4 justify-center'>
+              <Link
+                href='/login?redirect=/checkout'
+                className='px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/25'
+              >
+                前往登入
+              </Link>
+              <Link
+                href='/register'
+                className='px-6 py-3 bg-zinc-700 text-white rounded-lg hover:bg-zinc-600 transition-colors'
+              >
+                註冊會員
+              </Link>
+            </div>
           </motion.div>
         </div>
       </div>
@@ -155,13 +210,6 @@ export default function CheckoutPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // 生成訂單編號
-  const generateOrderNumber = (): string => {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `ORD${timestamp}${random}`;
-  };
-
   // 點擊確認訂單按鈕
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,48 +226,42 @@ export default function CheckoutPage() {
   const handleConfirmOrder = async () => {
     setIsSubmitting(true);
 
-    // 模擬 API 呼叫
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // 生成訂單編號
-      const orderNumber = generateOrderNumber();
-
       // 準備訂單資料
-      const orderData = {
-        id: crypto.randomUUID(),
-        userId: currentUser?.id || 'guest', // 加入使用者 ID
-        orderNumber,
-        shippingInfo,
-        shippingMethod: {
-          id: selectedShipping,
-          name: shippingMethod?.name || '',
-          price: shippingFee,
-          estimatedDays: shippingMethod?.description || '',
-        },
-        items,
-        totalPrice,
-        shippingFee,
-        finalTotal,
-        status: '處理中',
-        orderDate: new Date().toLocaleString('zh-TW', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+      const orderRequest = {
+        shipping_name: shippingInfo.name,
+        shipping_phone: shippingInfo.phone,
+        shipping_email: shippingInfo.email,
+        shipping_postal_code: shippingInfo.postalCode,
+        shipping_city: shippingInfo.city,
+        shipping_address: shippingInfo.address,
+        shipping_method: selectedShipping,
       };
 
-      // 將訂單資料存入 localStorage
-      try {
-        // 保留舊的 last-order-data 用於成功頁面顯示
-        localStorage.setItem('last-order-data', JSON.stringify(orderData));
+      // 呼叫 API 建立訂單
+      const order = await apiCreateOrder(orderRequest);
 
-        // 同時存入訂單列表
-        const existingOrders = JSON.parse(localStorage.getItem('keyboard_shop_orders') || '[]');
-        existingOrders.push(orderData);
-        localStorage.setItem('keyboard_shop_orders', JSON.stringify(existingOrders));
+      // 將訂單資料存入 localStorage 供成功頁面顯示
+      try {
+        localStorage.setItem(
+          'last-order-data',
+          JSON.stringify({
+            orderNumber: order.order_number,
+            shippingInfo,
+            shippingMethod: {
+              id: selectedShipping,
+              name: shippingMethod?.name || '',
+              price: shippingFee,
+              estimatedDays: shippingMethod?.description || '',
+            },
+            items,
+            totalPrice: order.subtotal,
+            shippingFee: order.shipping_fee,
+            finalTotal: order.total_amount,
+            status: order.status_label,
+            orderDate: order.created_at,
+          }),
+        );
       } catch (e) {
         console.error('無法存入 localStorage:', e);
       }
@@ -230,13 +272,14 @@ export default function CheckoutPage() {
       // 先導向到訂單完成頁面
       router.push('/checkout/success');
 
-      // 延遲清空購物車，確保頁面導航完成
+      // 延遲清空購物車（API 會自動清空，但本地也要同步）
       setTimeout(() => {
         clearCart();
       }, 100);
     } catch (error) {
       console.error('訂單提交失敗:', error);
-      alert('訂單提交失敗，請稍後再試');
+      const errorMessage = error instanceof Error ? error.message : '訂單提交失敗，請稍後再試';
+      alert(errorMessage);
       setShowConfirmModal(false);
     } finally {
       setIsSubmitting(false);
@@ -444,7 +487,7 @@ export default function CheckoutPage() {
                           name='shipping'
                           value={method.id}
                           checked={selectedShipping === method.id}
-                          onChange={e => setSelectedShipping(e.target.value)}
+                          onChange={() => setSelectedShipping(method.id)}
                           className='mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 focus:ring-2'
                         />
                         <div className='ml-3 flex-1'>

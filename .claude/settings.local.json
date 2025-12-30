@@ -5,9 +5,16 @@
       "Bash(php artisan test:*)",
       "Bash(find:*)",
       "Bash(php artisan:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "mcp__server-sequential-thinking__sequentialthinking",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(TOKEN=\"6|7ffSBZsCGY3gBYvLFuvZPU1NrGBaYGI29AeLBk6Wc16fb94f\")",
+      "Bash(TOKEN=\"7|onqIxciWki98poHSyEx70OgE2KeOTBiwyQBaTZi544877c25\")"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": ["memory"]
 }
