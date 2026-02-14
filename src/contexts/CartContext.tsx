@@ -443,7 +443,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         console.error('加入購物車失敗:', error);
         dispatch({ type: 'SET_LOADING', isLoading: false });
 
-        // API 失敗時，使用本地更新
+        const errorMessage = error instanceof Error ? error.message : '加入購物車失敗';
+
+        // 庫存不足時顯示通知，不做本地更新
+        if (errorMessage.includes('庫存')) {
+          addNotification({
+            type: 'warning',
+            title: '庫存不足',
+            message: errorMessage,
+            duration: 4000,
+            closable: true,
+          });
+          return;
+        }
+
+        // 其他錯誤：使用本地更新
         dispatch({ type: 'ADD_TO_CART', product, quantity });
         dispatch({ type: 'SET_SYNCED', isSynced: false });
 
@@ -532,12 +546,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         console.error('更新購物車項目數量失敗:', error);
         dispatch({ type: 'SET_LOADING', isLoading: false });
 
-        // API 失敗時，使用本地更新
+        const errorMessage = error instanceof Error ? error.message : '更新數量失敗';
+
+        // 庫存不足時顯示通知，不做本地更新
+        if (errorMessage.includes('庫存')) {
+          addNotification({
+            type: 'warning',
+            title: '庫存不足',
+            message: errorMessage,
+            duration: 4000,
+            closable: true,
+          });
+          return;
+        }
+
+        // 其他錯誤：使用本地更新
         dispatch({ type: 'UPDATE_QUANTITY', productId, quantity });
         dispatch({ type: 'SET_SYNCED', isSynced: false });
       }
     },
-    [state.items, removeFromCart],
+    [state.items, removeFromCart, addNotification],
   );
 
   /**

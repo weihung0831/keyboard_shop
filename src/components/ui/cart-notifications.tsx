@@ -124,7 +124,7 @@ export function CartNotifications() {
   if (notifications.length === 0) return null;
 
   return (
-    <div className='fixed top-20 right-4 z-[70] space-y-2 pointer-events-none'>
+    <div className='fixed top-20 right-4 z-[200] space-y-2 pointer-events-none'>
       <AnimatePresence mode='popLayout'>
         {notifications.map(notification => (
           <div key={notification.id} className='pointer-events-auto'>

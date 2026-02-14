@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { IconX, IconAlertTriangle } from '@tabler/icons-react';
 import { OrderConfirmModal } from '@/components/ui/order-confirm-modal';
 import { apiCreateOrder } from '@/lib/api';
 import type { ShippingMethod } from '@/types/order';
@@ -71,6 +72,7 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingInfo, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // 如果購物車是空的，重新導向到商品頁面
   if (items.length === 0) {
@@ -278,8 +280,8 @@ export default function CheckoutPage() {
       }, 100);
     } catch (error) {
       console.error('訂單提交失敗:', error);
-      const errorMessage = error instanceof Error ? error.message : '訂單提交失敗，請稍後再試';
-      alert(errorMessage);
+      const msg = error instanceof Error ? error.message : '訂單提交失敗，請稍後再試';
+      setErrorMessage(msg);
       setShowConfirmModal(false);
     } finally {
       setIsSubmitting(false);
@@ -601,6 +603,58 @@ export default function CheckoutPage() {
           }}
           isSubmitting={isSubmitting}
         />
+
+        {/* 錯誤提示對話框 */}
+        <AnimatePresence>
+          {errorMessage && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className='fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm'
+                onClick={() => setErrorMessage(null)}
+              />
+              <div className='fixed inset-0 z-[101] flex items-center justify-center p-4'>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  transition={{ type: 'spring', duration: 0.5 }}
+                  className='w-full max-w-md bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden'
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div className='flex items-center justify-between p-6 border-b border-zinc-700'>
+                    <div className='flex items-center gap-3'>
+                      <div className='flex items-center justify-center w-10 h-10 rounded-full bg-red-500/20'>
+                        <IconAlertTriangle className='w-6 h-6 text-red-500' />
+                      </div>
+                      <h2 className='text-xl font-semibold text-white'>訂單提交失敗</h2>
+                    </div>
+                    <button
+                      onClick={() => setErrorMessage(null)}
+                      className='flex items-center justify-center w-8 h-8 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors'
+                      aria-label='關閉'
+                    >
+                      <IconX className='w-5 h-5' />
+                    </button>
+                  </div>
+                  <div className='p-6'>
+                    <p className='text-zinc-300'>{errorMessage}</p>
+                  </div>
+                  <div className='p-6 border-t border-zinc-700 bg-zinc-800/30'>
+                    <button
+                      onClick={() => setErrorMessage(null)}
+                      className='w-full px-4 py-3 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition-colors border border-zinc-600'
+                    >
+                      確認
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -198,17 +198,17 @@ export interface OrdersQueryParams {
  */
 export interface OrderStats {
   /** 總訂單數 */
-  total_orders: number;
+  total: number;
   /** 待付款訂單數 */
-  pending_orders: number;
+  pending: number;
   /** 處理中訂單數 */
-  processing_orders: number;
+  processing: number;
+  /** 已出貨訂單數 */
+  shipped: number;
   /** 已完成訂單數 */
-  completed_orders: number;
+  completed: number;
   /** 已取消訂單數 */
-  cancelled_orders: number;
-  /** 總消費金額 */
-  total_spent: number;
+  cancelled: number;
 }
 
 /**

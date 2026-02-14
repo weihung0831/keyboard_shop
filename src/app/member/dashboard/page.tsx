@@ -5,33 +5,27 @@
  * 顯示會員基本資訊、快速功能連結、最近訂單
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { getUserOrders } from '@/lib/storage';
-import type { OrderSummary } from '@/types/member';
+import { useOrders } from '@/hooks/useOrders';
 import { ShoppingBag, User, Package, Calendar, CreditCard, Heart, Lock } from 'lucide-react';
 
 export default function MemberDashboardPage() {
   const { currentUser } = useAuth();
   const { isLoading } = useAuthGuard();
   const { totalItems: wishlistTotalItems } = useWishlist();
-  const [recentOrders, setRecentOrders] = useState<OrderSummary[]>([]);
-  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+  const { orders: recentOrders, isLoading: isLoadingOrders, fetchOrders } = useOrders();
 
-  // 載入最近的 3 筆訂單
+  // 從 API 載入最近的 3 筆訂單
   useEffect(() => {
     if (currentUser) {
-      setTimeout(() => {
-        const orders = getUserOrders(currentUser.id);
-        setRecentOrders(orders.slice(0, 3)); // 只取前 3 筆
-        setIsLoadingOrders(false);
-      }, 300);
+      fetchOrders({ per_page: 3 });
     }
-  }, [currentUser]);
+  }, [currentUser, fetchOrders]);
 
   if (isLoading) {
     return null; // Layout 已處理 loading 畫面
@@ -139,9 +133,10 @@ export default function MemberDashboardPage() {
               // 訂單列表
               <div className='space-y-4'>
                 {recentOrders.map(order => (
-                  <div
+                  <Link
                     key={order.id}
-                    className='bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 hover:border-zinc-600 transition-colors'
+                    href={`/member/orders/${order.id}`}
+                    className='block bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 hover:border-zinc-600 transition-colors'
                   >
                     <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
                       {/* 左側訂單資訊 */}
@@ -149,18 +144,20 @@ export default function MemberDashboardPage() {
                         <div className='flex items-center gap-2'>
                           <Package className='text-zinc-400' size={16} />
                           <span className='text-sm text-zinc-400'>訂單編號:</span>
-                          <span className='text-white font-medium'>{order.orderNumber}</span>
+                          <span className='text-white font-medium'>{order.order_number}</span>
                         </div>
                         <div className='flex items-center gap-2'>
                           <Calendar className='text-zinc-400' size={16} />
                           <span className='text-sm text-zinc-400'>日期:</span>
-                          <span className='text-white'>{order.date}</span>
+                          <span className='text-white'>
+                            {new Date(order.created_at).toLocaleDateString('zh-TW')}
+                          </span>
                         </div>
                         <div className='flex items-center gap-2'>
                           <CreditCard className='text-zinc-400' size={16} />
                           <span className='text-sm text-zinc-400'>金額:</span>
                           <span className='text-white font-semibold'>
-                            NT$ {order.total.toLocaleString()}
+                            NT$ {order.total_amount.toLocaleString()}
                           </span>
                         </div>
                       </div>
@@ -168,11 +165,11 @@ export default function MemberDashboardPage() {
                       {/* 右側狀態 */}
                       <div className='flex items-center justify-end'>
                         <span className='px-4 py-2 rounded-lg text-sm font-medium bg-blue-500/10 text-blue-500 border border-blue-500/30'>
-                          {order.status}
+                          {order.status_label}
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

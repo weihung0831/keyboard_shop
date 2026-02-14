@@ -77,7 +77,17 @@ function OrderTimeline({ timeline }: { timeline: OrderTimelineEvent[] }) {
             >
               {event.label}
             </div>
-            {event.time && <div className='text-sm text-zinc-400'>{event.time}</div>}
+            {event.time && (
+              <div className='text-sm text-zinc-400'>
+                {new Date(event.time).toLocaleString('zh-TW', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </div>
+            )}
           </div>
           {index < timeline.length - 1 && (
             <div className='absolute left-5 top-10 w-0.5 h-8 bg-zinc-700' />

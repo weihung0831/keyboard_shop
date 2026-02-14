@@ -10,7 +10,9 @@
       "Bash(curl:*)",
       "Bash(python3:*)",
       "Bash(TOKEN=\"6|7ffSBZsCGY3gBYvLFuvZPU1NrGBaYGI29AeLBk6Wc16fb94f\")",
-      "Bash(TOKEN=\"7|onqIxciWki98poHSyEx70OgE2KeOTBiwyQBaTZi544877c25\")"
+      "Bash(TOKEN=\"7|onqIxciWki98poHSyEx70OgE2KeOTBiwyQBaTZi544877c25\")",
+      "Bash(git diff:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
