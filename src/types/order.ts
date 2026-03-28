@@ -34,6 +34,28 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
   cancelled: 'red',
 };
 
+/**
+ * 訂單狀態 Tailwind 樣式（badge 用）
+ */
+export const ORDER_STATUS_BADGE_CLASSES: Record<OrderStatus, string> = {
+  pending: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30',
+  processing: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
+  shipped: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/30',
+  completed: 'bg-green-500/10 text-green-500 border-green-500/30',
+  cancelled: 'bg-red-500/10 text-red-500 border-red-500/30',
+};
+
+/**
+ * 訂單狀態 Tailwind 樣式（text + bg，無 border）
+ */
+export const ORDER_STATUS_TEXT_CLASSES: Record<OrderStatus, string> = {
+  pending: 'text-yellow-400 bg-yellow-400/10',
+  processing: 'text-blue-400 bg-blue-400/10',
+  shipped: 'text-indigo-400 bg-indigo-400/10',
+  completed: 'text-green-400 bg-green-400/10',
+  cancelled: 'text-red-400 bg-red-400/10',
+};
+
 // ==================== 配送方式 ====================
 
 /**
@@ -151,6 +173,73 @@ export interface Order {
   cancelled_at: string | null;
   /** 時間軸（可選） */
   timeline?: OrderTimelineEvent[];
+  /** 付款狀態（條件載入） */
+  payment_status?: PaymentStatus | null;
+  /** 付款狀態標籤（條件載入） */
+  payment_status_label?: string | null;
+}
+
+// ==================== 付款 ====================
+
+/**
+ * 付款狀態
+ */
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+
+/**
+ * 付款狀態標籤對應
+ */
+export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  pending: '待付款',
+  paid: '已付款',
+  failed: '付款失敗',
+  refunded: '已退款',
+};
+
+/**
+ * 付款資料（API 回應格式）
+ */
+export interface Payment {
+  id: number;
+  order_id: number;
+  merchant_trade_no: string;
+  trade_no: string | null;
+  payment_method: string;
+  amount: number;
+  status: PaymentStatus;
+  status_label: string;
+  paid_at: string | null;
+  refunded_at: string | null;
+  refund_amount: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * 發起付款 API 回應
+ */
+export interface InitiatePaymentApiResponse {
+  message: string;
+  data: {
+    payment: Payment;
+    payment_html: string;
+  };
+}
+
+/**
+ * 付款查詢 API 回應
+ */
+export interface PaymentApiResponse {
+  message: string;
+  data: Payment;
+}
+
+/**
+ * 退款 API 回應
+ */
+export interface RefundApiResponse {
+  message: string;
+  data: Payment;
 }
 
 // ==================== API 請求/回應型別 ====================

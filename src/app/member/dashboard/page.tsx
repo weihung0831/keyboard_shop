@@ -13,6 +13,8 @@ import { useWishlist } from '@/contexts/WishlistContext';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useOrders } from '@/hooks/useOrders';
 import { ShoppingBag, User, Package, Calendar, CreditCard, Heart, Lock } from 'lucide-react';
+import { ORDER_STATUS_BADGE_CLASSES } from '@/types/order';
+import type { OrderStatus } from '@/types/order';
 
 export default function MemberDashboardPage() {
   const { currentUser } = useAuth();
@@ -164,7 +166,12 @@ export default function MemberDashboardPage() {
 
                       {/* 右側狀態 */}
                       <div className='flex items-center justify-end'>
-                        <span className='px-4 py-2 rounded-lg text-sm font-medium bg-blue-500/10 text-blue-500 border border-blue-500/30'>
+                        <span
+                          className={`px-4 py-2 rounded-lg text-sm font-medium border ${
+                            ORDER_STATUS_BADGE_CLASSES[order.status as OrderStatus] ||
+                            'bg-zinc-500/10 text-zinc-500 border-zinc-500/30'
+                          }`}
+                        >
                           {order.status_label}
                         </span>
                       </div>

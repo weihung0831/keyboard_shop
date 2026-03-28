@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconX, IconAlertTriangle } from '@tabler/icons-react';
 import { OrderConfirmModal } from '@/components/ui/order-confirm-modal';
-import { apiCreateOrder } from '@/lib/api';
+import { apiCreateOrder, apiInitiatePayment } from '@/lib/api';
+import { openPaymentWindow } from '@/lib/payment-utils';
 import type { ShippingMethod } from '@/types/order';
 
 /**
@@ -268,16 +269,23 @@ export default function CheckoutPage() {
         console.error('無法存入 localStorage:', e);
       }
 
-      // 關閉確認對話框
+      // 建立訂單後自動發起付款，跳轉綠界
+      try {
+        const paymentResult = await apiInitiatePayment(order.id);
+        if (openPaymentWindow(paymentResult.payment_html)) {
+          clearCart();
+          setShowConfirmModal(false);
+          router.push('/checkout/success');
+          return;
+        }
+      } catch (payError) {
+        console.error('發起付款失敗，訂單已建立:', payError);
+      }
+
+      // 付款視窗開啟失敗或發起付款失敗：清空購物車，導向成功頁（可在訂單詳情重新付款）
+      clearCart();
       setShowConfirmModal(false);
-
-      // 先導向到訂單完成頁面
       router.push('/checkout/success');
-
-      // 延遲清空購物車（API 會自動清空，但本地也要同步）
-      setTimeout(() => {
-        clearCart();
-      }, 100);
     } catch (error) {
       console.error('訂單提交失敗:', error);
       const msg = error instanceof Error ? error.message : '訂單提交失敗，請稍後再試';

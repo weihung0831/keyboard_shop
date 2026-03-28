@@ -37,6 +37,10 @@ import type {
   CreateOrderRequest,
   OrdersQueryParams,
   OrderStats,
+  Payment,
+  InitiatePaymentApiResponse,
+  PaymentApiResponse,
+  RefundApiResponse,
 } from '@/types/order';
 
 // ==================== API 設定 ====================
@@ -452,6 +456,34 @@ export const apiGetOrder = async (orderId: number): Promise<Order> => {
  */
 export const apiCancelOrder = async (orderId: number): Promise<CancelOrderApiResponse['data']> => {
   const response = await api.put<CancelOrderApiResponse>(`/orders/${orderId}/cancel`);
+  return response.data.data;
+};
+
+// ==================== 付款 API ====================
+
+/**
+ * 發起付款（回傳 ECPay 結帳表單 HTML）
+ */
+export const apiInitiatePayment = async (
+  orderId: number,
+): Promise<InitiatePaymentApiResponse['data']> => {
+  const response = await api.post<InitiatePaymentApiResponse>(`/orders/${orderId}/pay`);
+  return response.data.data;
+};
+
+/**
+ * 查詢訂單付款狀態
+ */
+export const apiGetPayment = async (orderId: number): Promise<Payment> => {
+  const response = await api.get<PaymentApiResponse>(`/orders/${orderId}/payment`);
+  return response.data.data;
+};
+
+/**
+ * 申請退款
+ */
+export const apiRefundPayment = async (orderId: number): Promise<Payment> => {
+  const response = await api.post<RefundApiResponse>(`/orders/${orderId}/refund`);
   return response.data.data;
 };
 

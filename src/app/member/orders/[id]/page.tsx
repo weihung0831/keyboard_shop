@@ -24,8 +24,11 @@ import {
   AlertCircle,
   X,
   AlertTriangle,
+  CreditCard,
 } from 'lucide-react';
-import type { OrderTimelineEvent } from '@/types/order';
+import { ORDER_STATUS_TEXT_CLASSES } from '@/types/order';
+import { openPaymentWindow } from '@/lib/payment-utils';
+import type { OrderTimelineEvent, OrderStatus } from '@/types/order';
 
 /**
  * 訂單時間軸元件
@@ -102,10 +105,18 @@ export default function OrderDetailPage() {
   const params = useParams();
   const { currentUser } = useAuth();
   const { isLoading: authLoading } = useAuthGuard();
-  const { currentOrder, isLoading, error, fetchOrder, cancelOrder, clearCurrentOrder } =
-    useOrders();
+  const {
+    currentOrder,
+    isLoading,
+    error,
+    fetchOrder,
+    cancelOrder,
+    initiatePayment,
+    clearCurrentOrder,
+  } = useOrders();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
 
   const orderId = Number(params.id);
 
@@ -115,6 +126,18 @@ export default function OrderDetailPage() {
     }
     return () => clearCurrentOrder();
   }, [currentUser, orderId, fetchOrder, clearCurrentOrder]);
+
+  const handlePayment = async () => {
+    if (!currentOrder) return;
+    setIsPaying(true);
+
+    const paymentHtml = await initiatePayment(currentOrder.id);
+    if (paymentHtml) {
+      openPaymentWindow(paymentHtml);
+    }
+
+    setIsPaying(false);
+  };
 
   // 開啟取消訂單 Modal
   const handleCancelOrder = () => {
@@ -152,17 +175,8 @@ export default function OrderDetailPage() {
     });
   };
 
-  // 狀態顏色
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'text-yellow-400 bg-yellow-400/10',
-      processing: 'text-blue-400 bg-blue-400/10',
-      shipped: 'text-indigo-400 bg-indigo-400/10',
-      completed: 'text-green-400 bg-green-400/10',
-      cancelled: 'text-red-400 bg-red-400/10',
-    };
-    return colors[status] || 'text-zinc-400 bg-zinc-400/10';
-  };
+  const getStatusColor = (status: OrderStatus) =>
+    ORDER_STATUS_TEXT_CLASSES[status] || 'text-zinc-400 bg-zinc-400/10';
 
   // 配送方式名稱
   const getShippingMethodName = (method: string) => {
@@ -254,14 +268,33 @@ export default function OrderDetailPage() {
                     </span>
                   </div>
 
-                  {/* 取消訂單按鈕 */}
+                  {/* 操作按鈕 */}
                   {currentOrder.status === 'pending' && (
-                    <button
-                      onClick={handleCancelOrder}
-                      className='px-4 py-2 text-red-400 border border-red-400/30 rounded-lg hover:bg-red-400/10 transition-colors'
-                    >
-                      取消訂單
-                    </button>
+                    <div className='flex gap-3'>
+                      <button
+                        onClick={handlePayment}
+                        disabled={isPaying}
+                        className='flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50'
+                      >
+                        {isPaying ? (
+                          <>
+                            <div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent' />
+                            處理中...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard size={18} />
+                            前往付款
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={handleCancelOrder}
+                        className='px-4 py-2 text-red-400 border border-red-400/30 rounded-lg hover:bg-red-400/10 transition-colors'
+                      >
+                        取消訂單
+                      </button>
+                    </div>
                   )}
                 </div>
 

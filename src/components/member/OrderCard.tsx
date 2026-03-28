@@ -6,33 +6,18 @@
 import React from 'react';
 import { Package, Calendar, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ORDER_STATUS_BADGE_CLASSES } from '@/types/order';
+import type { OrderStatus } from '@/types/order';
 
 interface OrderCardProps {
   orderNumber: string;
   date: string;
   total: number;
-  status: string;
+  status: OrderStatus;
+  statusLabel: string;
 }
 
-export function OrderCard({ orderNumber, date, total, status }: OrderCardProps) {
-  // 訂單狀態對應的顏色
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case '已完成':
-        return 'bg-green-500/10 text-green-500 border-green-500/30';
-      case '處理中':
-        return 'bg-blue-500/10 text-blue-500 border-blue-500/30';
-      case '已出貨':
-        return 'bg-purple-500/10 text-purple-500 border-purple-500/30';
-      case '待處理':
-        return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30';
-      case '已取消':
-        return 'bg-red-500/10 text-red-500 border-red-500/30';
-      default:
-        return 'bg-zinc-500/10 text-zinc-500 border-zinc-500/30';
-    }
-  };
-
+export function OrderCard({ orderNumber, date, total, status, statusLabel }: OrderCardProps) {
   return (
     <div className='bg-zinc-900/90 backdrop-blur-sm border border-zinc-700 rounded-lg p-6 hover:border-zinc-600 transition-colors'>
       <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
@@ -65,10 +50,11 @@ export function OrderCard({ orderNumber, date, total, status }: OrderCardProps) 
           <span
             className={cn(
               'px-4 py-2 rounded-lg text-sm font-medium border',
-              getStatusColor(status),
+              ORDER_STATUS_BADGE_CLASSES[status] ||
+                'bg-zinc-500/10 text-zinc-500 border-zinc-500/30',
             )}
           >
-            {status}
+            {statusLabel}
           </span>
         </div>
       </div>

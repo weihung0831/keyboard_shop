@@ -12,22 +12,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useOrders } from '@/hooks/useOrders';
 import { Package, AlertCircle } from 'lucide-react';
+import { ORDER_STATUS_TEXT_CLASSES } from '@/types/order';
 import type { Order } from '@/types/order';
 
 /**
  * 訂單卡片元件
  */
 function OrderCard({ order }: { order: Order }) {
-  // 狀態顏色對應
-  const statusColors: Record<string, string> = {
-    pending: 'text-yellow-400 bg-yellow-400/10',
-    processing: 'text-blue-400 bg-blue-400/10',
-    shipped: 'text-indigo-400 bg-indigo-400/10',
-    completed: 'text-green-400 bg-green-400/10',
-    cancelled: 'text-red-400 bg-red-400/10',
-  };
-
-  const statusColor = statusColors[order.status] || 'text-zinc-400 bg-zinc-400/10';
+  const statusColor = ORDER_STATUS_TEXT_CLASSES[order.status] || 'text-zinc-400 bg-zinc-400/10';
 
   // 格式化日期
   const formatDate = (dateStr: string) => {

@@ -9,6 +9,7 @@ import {
   apiCreateOrder,
   apiGetOrder,
   apiCancelOrder,
+  apiInitiatePayment,
 } from '@/lib/api';
 
 /**
@@ -43,6 +44,8 @@ interface UseOrdersReturn extends OrdersState {
   createOrder: (data: CreateOrderRequest) => Promise<Order | null>;
   /** 取消訂單 */
   cancelOrder: (orderId: number) => Promise<boolean>;
+  /** 發起付款（回傳 ECPay HTML 表單） */
+  initiatePayment: (orderId: number) => Promise<string | null>;
   /** 清除錯誤 */
   clearError: () => void;
   /** 清除當前訂單 */
@@ -179,6 +182,23 @@ export function useOrders(): UseOrdersReturn {
   }, []);
 
   /**
+   * 發起付款（回傳 ECPay HTML 表單，由前端渲染並自動提交）
+   * 不影響共用 isLoading，由呼叫端自行管理 loading 狀態
+   */
+  const initiatePayment = useCallback(async (orderId: number): Promise<string | null> => {
+    setState(prev => ({ ...prev, error: null }));
+
+    try {
+      const result = await apiInitiatePayment(orderId);
+      return result.payment_html;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '發起付款失敗';
+      setState(prev => ({ ...prev, error: message }));
+      return null;
+    }
+  }, []);
+
+  /**
    * 清除錯誤
    */
   const clearError = useCallback(() => {
@@ -199,6 +219,7 @@ export function useOrders(): UseOrdersReturn {
     fetchOrder,
     createOrder,
     cancelOrder,
+    initiatePayment,
     clearError,
     clearCurrentOrder,
   };
