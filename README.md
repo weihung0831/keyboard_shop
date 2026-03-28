@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 鍵盤商城 Keyboard Shop
 
-## Getting Started
+機械鍵盤電商平台，採用前後端分離架構。前端使用 Next.js 15 + React 19，後端使用 Laravel 12 API（獨立專案 [keyboard_shop_api](https://github.com/weihung0831/keyboard_shop_api)）。
 
-First, run the development server:
+## 功能
+
+- 商品瀏覽與搜尋、商品 3D 檢視
+- 購物車管理（本地 + API 同步）
+- 會員註冊 / 登入（Bearer Token 認證）
+- 結帳流程與 ECPay 綠界金流整合
+- 訂單管理（查詢、取消、付款）
+- 願望清單
+- 會員專區（個人資料、修改密碼、訂單歷史）
+
+## 技術棧
+
+| 類別       | 技術                                     |
+| ---------- | ---------------------------------------- |
+| 框架       | Next.js 15 (App Router, Turbopack)       |
+| UI         | React 19 + TypeScript 5 + Tailwind CSS 4 |
+| HTTP       | axios                                    |
+| 動畫       | Framer Motion                            |
+| 3D         | Three.js + React Three Fiber             |
+| 圖示       | Lucide React, Tabler Icons               |
+| 表單       | React Hook Form + Zod                    |
+| 程式碼品質 | ESLint + Prettier + husky + lint-staged  |
+
+## 快速開始
+
+### 前置需求
+
+- Node.js >= 20.0.0
+- 後端 API 服務執行中（見 [keyboard_shop_api](https://github.com/weihung0831/keyboard_shop_api)）
+
+### 安裝
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/weihung0831/keyboard_shop.git
+cd keyboard_shop
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 環境設定
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+建立 `.env.local`：
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+```
 
-## Learn More
+### 開發
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev           # 啟動開發伺服器 (Turbopack)
+npm run build         # 正式環境建置
+npm run lint          # ESLint 檢查
+npm run type-check    # TypeScript 型別檢查
+npm run format:check  # Prettier 格式檢查
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 專案結構
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/                    # App Router 頁面
+│   ├── products/           # 商品列表與詳情
+│   ├── checkout/           # 結帳流程
+│   ├── member/             # 會員專區
+│   │   ├── dashboard/      # 會員首頁
+│   │   ├── orders/         # 訂單管理
+│   │   ├── wishlist/       # 願望清單
+│   │   ├── profile/        # 個人資料
+│   │   └── change-password/# 修改密碼
+│   ├── login/              # 登入
+│   └── register/           # 註冊
+├── components/             # React 元件
+│   ├── ui/                 # 共用 UI 元件
+│   ├── auth/               # 認證相關元件
+│   └── member/             # 會員相關元件
+├── contexts/               # React Context (Auth, Cart, Wishlist)
+├── hooks/                  # 自定義 Hooks
+├── lib/                    # 工具函式 & API 服務
+│   ├── api.ts              # axios API 服務
+│   ├── payment-utils.ts    # ECPay 付款工具
+│   ├── validators.ts       # 表單驗證
+│   └── utils.ts            # 通用工具
+├── types/                  # TypeScript 型別定義
+└── data/                   # 靜態資料
+```
 
-## Deploy on Vercel
+## 授權
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+本專案僅供學習用途。

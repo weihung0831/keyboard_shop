@@ -6,8 +6,12 @@
 
 ```bash
 # 前端 (Next.js 15)
-cd src && npm run dev       # 開發伺服器
-cd src && npm run build     # 建置
+npm run dev                 # 開發伺服器 (Turbopack)
+npm run build               # 建置
+npm run lint                # ESLint 檢查
+npm run lint:fix            # ESLint 自動修正
+npm run type-check          # TypeScript 型別檢查
+npm run format:check        # Prettier 格式檢查
 
 # 後端 (Laravel 12) — 見 keyboard_shop_api 專案
 ```
@@ -23,10 +27,18 @@ cd src && npm run build     # 建置
 ```
 src/                        # Next.js 前端
 ├── app/                    # App Router 頁面
-├── components/             # React 元件 (ui/ 共用元件)
+├── components/             # React 元件
+│   ├── ui/                 # 共用 UI 元件
+│   ├── auth/               # 認證相關元件
+│   └── member/             # 會員相關元件
 ├── contexts/               # React Context
+├── data/                   # 靜態資料 (JSON)
 ├── hooks/                  # 自定義 Hooks
-├── lib/                    # 工具函式 & API 服務 (api.ts)
+├── lib/                    # 工具函式 & API 服務
+│   ├── api.ts              # axios API 服務（所有後端請求）
+│   ├── payment-utils.ts    # ECPay 付款工具
+│   ├── validators.ts       # 表單驗證
+│   └── utils.ts            # cn() 等通用工具
 └── types/                  # TypeScript 型別定義
 ```
 
@@ -57,7 +69,10 @@ src/                        # Next.js 前端
 
 ## Gotchas
 
-- `.claude/agents/` 有 4 個開發輔助 Agent (fullstack-engineer, pm, qa, code-reviewer)
 - 前端 2 空格 + 單引號 + 分號；後端 4 空格
 - API 型別定義在 `src/types/`
 - Context 放 `src/contexts/`，Hooks 放 `src/hooks/`
+- 訂單/付款狀態樣式統一用 `ORDER_STATUS_BADGE_CLASSES` / `ORDER_STATUS_TEXT_CLASSES`（`src/types/order.ts`）
+- ECPay 付款表單用 `openPaymentWindow()`（`src/lib/payment-utils.ts`），不要直接 `window.open`
+- Pre-commit hook (husky + lint-staged) 會自動跑 Prettier + ESLint
+- `npm run dev` 預設使用 Turbopack
