@@ -27,16 +27,27 @@ npm run format:check        # Prettier 格式檢查
 ```
 src/                        # Next.js 前端
 ├── app/                    # App Router 頁面
+│   ├── admin/              # 後台管理頁面
+│   ├── checkout/           # 結帳頁面
+│   ├── member/             # 會員中心頁面
+│   └── products/           # 商品頁面
 ├── components/             # React 元件
 │   ├── ui/                 # 共用 UI 元件
 │   ├── auth/               # 認證相關元件
+│   ├── admin/              # 後台管理元件
 │   └── member/             # 會員相關元件
 ├── contexts/               # React Context
+│   ├── AuthContext.tsx      # 認證狀態
+│   ├── CartContext.tsx      # 購物車狀態
+│   ├── SettingsContext.tsx  # 網站設定
+│   └── WishlistContext.tsx  # 願望清單
 ├── data/                   # 靜態資料 (JSON)
 ├── hooks/                  # 自定義 Hooks
 ├── lib/                    # 工具函式 & API 服務
 │   ├── api.ts              # axios API 服務（所有後端請求）
+│   ├── admin-api.ts        # 後台管理 API 服務
 │   ├── payment-utils.ts    # ECPay 付款工具
+│   ├── storage.ts          # localStorage 工具
 │   ├── validators.ts       # 表單驗證
 │   └── utils.ts            # cn() 等通用工具
 └── types/                  # TypeScript 型別定義
@@ -47,6 +58,8 @@ src/                        # Next.js 前端
 **前端:**
 
 - axios 統一 API 請求，服務在 `src/lib/api.ts`
+- 後台管理 API 請求在 `src/lib/admin-api.ts`
+- localStorage 操作統一用 `src/lib/storage.ts`
 - `NEXT_PUBLIC_API_URL` 設定 API 路徑
 - Token 存 localStorage `keyboard_shop_token`
 - 共用元件在 `src/components/ui/`
