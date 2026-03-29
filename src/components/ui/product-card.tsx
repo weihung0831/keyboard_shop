@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn, parseSpecs } from '@/lib/utils';
 import type { Product } from '@/types/product';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -21,9 +21,11 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
     product.primary_image || firstImage?.url || firstImage?.image_url || '/placeholder.png';
 
   // 從 specifications 取得規格資訊（支援中英文 key）
-  const specs = product.specifications || {};
-  const switches = specs.switches || specs['軸體'] || specs['軸體類型'] || '-';
-  const layout = specs.layout || specs['配置'] || specs['配列'] || '-';
+  const specs = parseSpecs(product.specifications);
+  // 取前兩個規格動態顯示
+  const specEntries = Object.entries(specs);
+  const spec1 = specEntries[0] || null;
+  const spec2 = specEntries[1] || null;
   const wireless =
     specs.wireless === 'true' ||
     specs['無線'] === '是' ||
@@ -155,17 +157,21 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
           </div>
         )}
 
-        {/* Switch Type and Layout - Fixed height */}
+        {/* Specs - Fixed height */}
         <div className='mb-4 h-12 flex items-start'>
           <div className='grid grid-cols-2 gap-2 text-sm w-full'>
-            <div className='min-h-0'>
-              <span className='text-zinc-400'>軸體：</span>
-              <span className='text-zinc-200 block truncate'>{switches}</span>
-            </div>
-            <div className='min-h-0'>
-              <span className='text-zinc-400'>配列：</span>
-              <span className='text-zinc-200 block truncate'>{layout}</span>
-            </div>
+            {spec1 && (
+              <div className='min-h-0'>
+                <span className='text-zinc-400'>{spec1[0]}：</span>
+                <span className='text-zinc-200 block truncate'>{spec1[1]}</span>
+              </div>
+            )}
+            {spec2 && (
+              <div className='min-h-0'>
+                <span className='text-zinc-400'>{spec2[0]}：</span>
+                <span className='text-zinc-200 block truncate'>{spec2[1]}</span>
+              </div>
+            )}
           </div>
         </div>
 

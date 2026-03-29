@@ -57,6 +57,7 @@ export default function AdminSettingsPage() {
   const [values, setValues] = useState<Record<string, SettingValue>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastProps | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -70,8 +71,9 @@ export default function AdminSettingsPage() {
           initial[s.key] = s.value;
         });
         setValues(initial);
-      } catch {
-        // silent
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '無法載入系統設定，請檢查 API 連線';
+        setError(message);
       } finally {
         setIsLoading(false);
       }
@@ -107,6 +109,20 @@ export default function AdminSettingsPage() {
     return <div className='py-20 text-center text-zinc-500 text-sm'>載入中...</div>;
   }
 
+  if (error) {
+    return (
+      <div className='py-20 text-center'>
+        <p className='text-red-400 text-sm'>{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className='mt-4 text-sm text-blue-400 hover:text-blue-300 underline'
+        >
+          重新載入
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className='mb-6 flex items-center justify-between'>
@@ -124,65 +140,71 @@ export default function AdminSettingsPage() {
         </button>
       </div>
 
-      <div className='space-y-6'>
-        {Object.entries(grouped).map(([group, groupSettings]) => (
-          <div key={group} className='bg-zinc-900 border border-zinc-800 rounded-xl p-6'>
-            <h2 className='text-sm font-semibold text-white mb-4 pb-3 border-b border-zinc-800'>
-              {{ general: '一般', payment: '金流', shipping: '運費' }[group] ?? group}
-            </h2>
-            <div className='space-y-4'>
-              {groupSettings.map(setting => {
-                const currentValue = values[setting.key] ?? setting.value;
-                const isBool = isBoolean(setting.value);
-                const isInt = !isBool && isInteger(setting.value);
+      {settings.length === 0 ? (
+        <div className='py-16 text-center text-zinc-500 text-sm'>
+          尚無系統設定資料，請確認後端已建立設定項目
+        </div>
+      ) : (
+        <div className='space-y-6'>
+          {Object.entries(grouped).map(([group, groupSettings]) => (
+            <div key={group} className='bg-zinc-900 border border-zinc-800 rounded-xl p-6'>
+              <h2 className='text-sm font-semibold text-white mb-4 pb-3 border-b border-zinc-800'>
+                {{ general: '一般', payment: '金流', shipping: '運費' }[group] ?? group}
+              </h2>
+              <div className='space-y-4'>
+                {groupSettings.map(setting => {
+                  const currentValue = values[setting.key] ?? setting.value;
+                  const isBool = isBoolean(setting.value);
+                  const isInt = !isBool && isInteger(setting.value);
 
-                return (
-                  <div key={setting.key} className='flex items-start justify-between gap-4'>
-                    <div className='flex-1 min-w-0'>
-                      <p className='text-sm text-zinc-200 font-medium'>
-                        {setting.description ?? setting.key}
-                      </p>
-                    </div>
-                    <div className='flex-shrink-0'>
-                      {isBool ? (
-                        <button
-                          type='button'
-                          onClick={() => setValue(setting.key, !toBoolean(currentValue))}
-                          className={cn(
-                            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                            toBoolean(currentValue) ? 'bg-blue-600' : 'bg-zinc-600',
-                          )}
-                        >
-                          <span
+                  return (
+                    <div key={setting.key} className='flex items-start justify-between gap-4'>
+                      <div className='flex-1 min-w-0'>
+                        <p className='text-sm text-zinc-200 font-medium'>
+                          {setting.description ?? setting.key}
+                        </p>
+                      </div>
+                      <div className='flex-shrink-0'>
+                        {isBool ? (
+                          <button
+                            type='button'
+                            onClick={() => setValue(setting.key, !toBoolean(currentValue))}
                             className={cn(
-                              'inline-block h-4 w-4 rounded-full bg-white transition-transform',
-                              toBoolean(currentValue) ? 'translate-x-6' : 'translate-x-1',
+                              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                              toBoolean(currentValue) ? 'bg-blue-600' : 'bg-zinc-600',
                             )}
+                          >
+                            <span
+                              className={cn(
+                                'inline-block h-4 w-4 rounded-full bg-white transition-transform',
+                                toBoolean(currentValue) ? 'translate-x-6' : 'translate-x-1',
+                              )}
+                            />
+                          </button>
+                        ) : isInt ? (
+                          <input
+                            type='number'
+                            className={cn(INPUT_CLASS, 'w-28 text-right')}
+                            value={currentValue as number}
+                            onChange={e => setValue(setting.key, Number(e.target.value))}
                           />
-                        </button>
-                      ) : isInt ? (
-                        <input
-                          type='number'
-                          className={cn(INPUT_CLASS, 'w-28 text-right')}
-                          value={currentValue as number}
-                          onChange={e => setValue(setting.key, Number(e.target.value))}
-                        />
-                      ) : (
-                        <input
-                          type='text'
-                          className={cn(INPUT_CLASS, 'w-48')}
-                          value={currentValue as string}
-                          onChange={e => setValue(setting.key, e.target.value)}
-                        />
-                      )}
+                        ) : (
+                          <input
+                            type='text'
+                            className={cn(INPUT_CLASS, 'w-48')}
+                            value={currentValue as string}
+                            onChange={e => setValue(setting.key, e.target.value)}
+                          />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {toast && <Toast message={toast.message} type={toast.type} />}
     </div>

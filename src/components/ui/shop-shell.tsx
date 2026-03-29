@@ -8,10 +8,10 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { SimpleNavbarWithHoverEffects } from '@/components/ui/Navbar';
-import { SimpleFooterWithFourGrids } from '@/components/ui/Footer';
 import { CartSidebar } from '@/components/ui/cart-sidebar';
 import { CartNotifications } from '@/components/ui/cart-notifications';
 import WishlistNotifications from '@/components/ui/wishlist-notifications';
+import { ScrollToTop } from '@/components/ui/scroll-to-top';
 
 export function ShopShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -25,10 +25,10 @@ export function ShopShell({ children }: { children: React.ReactNode }) {
     <>
       <SimpleNavbarWithHoverEffects />
       {children}
-      <SimpleFooterWithFourGrids />
       <CartSidebar />
       <CartNotifications />
       <WishlistNotifications />
+      <ScrollToTop />
     </>
   );
 }

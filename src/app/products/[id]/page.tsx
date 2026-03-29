@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import type { Product } from '@/types/product';
 import { apiGetProduct } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, parseSpecs } from '@/lib/utils';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -62,11 +62,8 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     fetchProduct();
   }, [resolvedParams.id]);
 
-  // 從 specifications 取得規格資訊
-  const specs = product?.specifications || {};
-  const switches = specs['軸體'] || specs.switches || '-';
-  const layout = specs['配置'] || specs.layout || '-';
-  const connection = specs['連接方式'] || specs.connection || '-';
+  // 從 specifications 取得規格資訊（相容陣列與物件格式）
+  const specs = parseSpecs(product?.specifications);
 
   // 取得產品圖片
   const productImages = product?.images || [];
@@ -167,18 +164,11 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   // 檢查商品是否在願望清單中
   const inWishlist = isInWishlist(product.id);
 
-  // 從 specifications 取得更多規格用於顯示
+  // 將所有 API 規格 + 庫存狀態合併顯示
   const displaySpecs = [
-    { label: '軸體類型', value: switches },
-    { label: '鍵盤配列', value: layout },
-    { label: '連接方式', value: connection },
+    ...Object.entries(specs).map(([key, value]) => ({ label: key, value })),
     { label: '庫存狀態', value: inStock ? `有庫存 (${product.stock})` : '缺貨中' },
   ];
-
-  // 額外規格（從 specifications 中過濾）
-  const additionalSpecs = Object.entries(specs).filter(
-    ([key]) => !['軸體', '配置', '連接方式', 'switches', 'layout', 'connection'].includes(key),
-  );
 
   return (
     <div className='min-h-screen bg-black'>
@@ -312,24 +302,6 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 ))}
               </div>
             </div>
-
-            {/* Additional Specifications */}
-            {additionalSpecs.length > 0 && (
-              <div className='space-y-4'>
-                <h3 className='text-xl font-semibold text-white'>詳細規格</h3>
-                <div className='grid gap-2'>
-                  {additionalSpecs.map(([key, value], index) => (
-                    <div
-                      key={index}
-                      className='flex items-center justify-between gap-4 rounded-lg bg-zinc-900/90 p-3 border border-zinc-600 backdrop-blur-sm'
-                    >
-                      <span className='text-zinc-400 flex-shrink-0'>{key}</span>
-                      <span className='text-zinc-200 text-right break-words min-w-0'>{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* 數量選擇 */}
             <div className='space-y-3'>

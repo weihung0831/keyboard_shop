@@ -20,7 +20,7 @@ import {
   IconAlertTriangle,
   IconX,
 } from '@tabler/icons-react';
-import { cn } from '@/lib/utils';
+import { cn, parseSpecs } from '@/lib/utils';
 
 export default function MemberWishlistPage() {
   const { isLoading } = useAuthGuard();
@@ -196,8 +196,8 @@ export default function MemberWishlistPage() {
 
                     {/* 商品規格 */}
                     <div className='flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-800'>
-                      <span>{item.product.specifications?.['軸體'] || '-'}</span>
-                      <span>{item.product.specifications?.['連接方式'] || '-'}</span>
+                      <span>{parseSpecs(item.product.specifications)['軸體'] || '-'}</span>
+                      <span>{parseSpecs(item.product.specifications)['連接方式'] || '-'}</span>
                     </div>
                   </div>
                 </motion.div>
