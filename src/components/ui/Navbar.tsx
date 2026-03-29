@@ -14,9 +14,11 @@ import Image from 'next/image';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { useRouter } from 'next/navigation';
 import type { SearchSuggestion } from '@/types/product';
 import { apiGetSearchSuggestions } from '@/lib/api';
+import { isAdminRole } from '@/types/admin';
 
 export function SimpleNavbarWithHoverEffects() {
   return <Navbar />;
@@ -249,6 +251,17 @@ const DesktopNav = ({ navItems }: { navItems: { name: string; link: string }[] }
                 <p className='text-xs text-zinc-400 truncate'>{currentUser?.email}</p>
               </div>
               <div className='py-2'>
+                {isAdminRole(currentUser?.role) && (
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      router.push('/admin');
+                    }}
+                    className='w-full text-left px-4 py-2 text-sm text-blue-400 hover:bg-zinc-800 transition-colors'
+                  >
+                    後台管理
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setShowUserMenu(false);
@@ -498,6 +511,17 @@ const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] })
                     <p className='text-xs text-zinc-400 truncate'>{currentUser?.email}</p>
                   </div>
                   <div className='py-2'>
+                    {isAdminRole(currentUser?.role) && (
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          router.push('/admin');
+                        }}
+                        className='w-full text-left px-4 py-2 text-sm text-blue-400 hover:bg-zinc-800 transition-colors'
+                      >
+                        後台管理
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setShowUserMenu(false);
@@ -591,6 +615,7 @@ const MobileNav = ({ navItems }: { navItems: { name: string; link: string }[] })
 };
 
 const Logo = () => {
+  const { settings } = useSettings();
   return (
     <Link
       href='/'
@@ -602,7 +627,7 @@ const Logo = () => {
         <span className='relative z-10 font-bold text-xl text-gray-800 dark:text-white'>AK</span>
       </div>
       <span className='font-medium text-2xl text-black dark:text-white bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text transition-all duration-300'>
-        Axis Keys
+        {settings.site_name}
       </span>
     </Link>
   );

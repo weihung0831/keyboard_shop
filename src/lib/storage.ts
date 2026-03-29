@@ -65,6 +65,7 @@ export const registerUser = (data: RegisterFormData): CurrentUser => {
     name: newUser.name,
     phone: newUser.phone,
     address: '',
+    role: 'user',
     loginAt: new Date().toISOString(),
   };
 
@@ -98,6 +99,7 @@ export const loginUser = (email: string, password: string): CurrentUser => {
     name: user.name,
     phone: user.phone,
     address: '',
+    role: 'user',
     loginAt: new Date().toISOString(),
   };
 

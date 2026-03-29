@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import React, { useState } from 'react';
+import { useSettings } from '@/contexts/SettingsContext';
 import {
   IconBrandFacebook,
   IconBrandInstagram,
@@ -156,7 +157,7 @@ export function SimpleFooterWithFourGrids() {
             <Logo />
           </div>
 
-          <div className='mt-2 sm:-ml-4'>&copy; 2025 Axis Keys 軸心鍵界 版權所有</div>
+          <FooterCopyright />
         </div>
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12 lg:gap-16 items-start mt-10 sm:mt-0 md:mt-0'>
           <CollapsibleSection
@@ -237,14 +238,27 @@ export function SimpleFooterWithFourGrids() {
           </CollapsibleSection>
         </div>
       </div>
-      <p className='text-center mt-20 text-5xl md:text-9xl lg:text-[12rem] xl:text-[13rem] font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 dark:from-neutral-900 to-neutral-200 dark:to-neutral-700 inset-x-0'>
-        Axis Keys
-      </p>
+      <FooterBrandText />
     </div>
   );
 }
 
+const FooterCopyright = () => {
+  const { settings } = useSettings();
+  return <div className='mt-2 sm:-ml-4'>&copy; 2025 {settings.site_name} 版權所有</div>;
+};
+
+const FooterBrandText = () => {
+  const { settings } = useSettings();
+  return (
+    <p className='text-center mt-20 text-5xl md:text-9xl lg:text-[12rem] xl:text-[13rem] font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 dark:from-neutral-900 to-neutral-200 dark:to-neutral-700 inset-x-0'>
+      {settings.site_name}
+    </p>
+  );
+};
+
 const Logo = () => {
+  const { settings } = useSettings();
   return (
     <Link
       href='/'
@@ -256,7 +270,7 @@ const Logo = () => {
         <span className='relative z-10 font-bold text-gray-800 dark:text-white'>AK</span>
       </div>
       <span className='font-medium text-lg text-black dark:text-white bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text transition-all duration-300'>
-        Axis Keys
+        {settings.site_name}
       </span>
     </Link>
   );

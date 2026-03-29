@@ -100,7 +100,7 @@ const FAQItem = ({
 
   return (
     <div
-      className='shadow-input mb-8 w-full cursor-pointer rounded-lg bg-white p-4 dark:bg-gray-900 border dark:border-gray-700'
+      className='shadow-input mb-8 w-full cursor-pointer rounded-lg bg-white p-4 dark:bg-zinc-900 border dark:border-zinc-800'
       onClick={() => {
         if (isOpen) {
           setOpen(null);

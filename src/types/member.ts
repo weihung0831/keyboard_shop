@@ -5,6 +5,8 @@
  * 不適用於生產環境,請勿使用真實密碼
  */
 
+import type { UserRole } from '@/types/admin';
+
 // ==================== localStorage Keys ====================
 
 export const STORAGE_KEYS = {
@@ -36,6 +38,7 @@ export interface CurrentUser {
   name: string;
   phone: string;
   address: string; // 地址
+  role: UserRole; // 使用者角色
   loginAt: string; // 登入時間
 }
 

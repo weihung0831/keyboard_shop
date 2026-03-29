@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { ORDER_STATUS_TEXT_CLASSES } from '@/types/order';
 import { openPaymentWindow } from '@/lib/payment-utils';
+import { useSettings } from '@/contexts/SettingsContext';
 import type { OrderTimelineEvent, OrderStatus } from '@/types/order';
 
 /**
@@ -105,6 +106,7 @@ export default function OrderDetailPage() {
   const params = useParams();
   const { currentUser } = useAuth();
   const { isLoading: authLoading } = useAuthGuard();
+  const { settings } = useSettings();
   const {
     currentOrder,
     isLoading,
@@ -271,23 +273,29 @@ export default function OrderDetailPage() {
                   {/* 操作按鈕 */}
                   {currentOrder.status === 'pending' && (
                     <div className='flex gap-3'>
-                      <button
-                        onClick={handlePayment}
-                        disabled={isPaying}
-                        className='flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50'
-                      >
-                        {isPaying ? (
-                          <>
-                            <div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent' />
-                            處理中...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard size={18} />
-                            前往付款
-                          </>
-                        )}
-                      </button>
+                      {settings.ecpay_enabled ? (
+                        <button
+                          onClick={handlePayment}
+                          disabled={isPaying}
+                          className='flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50'
+                        >
+                          {isPaying ? (
+                            <>
+                              <div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent' />
+                              處理中...
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard size={18} />
+                              前往付款
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <div className='px-4 py-2 bg-zinc-800 text-zinc-400 rounded-lg text-sm'>
+                          金流服務暫停中
+                        </div>
+                      )}
                       <button
                         onClick={handleCancelOrder}
                         className='px-4 py-2 text-red-400 border border-red-400/30 rounded-lg hover:bg-red-400/10 transition-colors'

@@ -5,8 +5,72 @@ import { useId } from 'react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { motion } from 'motion/react';
+import api from '@/lib/api';
+import type { AxiosError } from 'axios';
+
+interface ContactFormData {
+  name: string;
+  email: string;
+  company: string;
+  message: string;
+}
+
+interface ValidationErrors {
+  name?: string[];
+  email?: string[];
+  company?: string[];
+  message?: string[];
+}
 
 export default function ContactFormGridWithDetails() {
+  const [form, setForm] = useState<ContactFormData>({
+    name: '',
+    email: '',
+    company: '',
+    message: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [generalError, setGeneralError] = useState('');
+
+  const set = (field: keyof ContactFormData, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    // 清除該欄位的錯誤
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setErrors({});
+    setGeneralError('');
+
+    try {
+      await api.post('/contact', {
+        name: form.name,
+        email: form.email,
+        company: form.company || undefined,
+        message: form.message,
+      });
+
+      setSuccess(true);
+      setForm({ name: '', email: '', company: '', message: '' });
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      const axiosError = err as AxiosError<{ message?: string; errors?: ValidationErrors }>;
+      if (axiosError.response?.status === 422) {
+        setErrors(axiosError.response.data?.errors ?? {});
+      } else {
+        setGeneralError(axiosError.response?.data?.message ?? '送出失敗，請稍後再試');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className='min-h-screen bg-black'>
       <div className='mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-4 pt-20 pb-10 md:px-6 md:pt-32 md:pb-20 lg:grid-cols-2'>
@@ -48,65 +112,98 @@ export default function ContactFormGridWithDetails() {
         </div>
         <div className='relative mx-auto flex w-full max-w-2xl flex-col items-start gap-4 overflow-hidden rounded-3xl bg-gradient-to-b from-gray-100 to-gray-200 p-4 sm:p-10 dark:from-neutral-900 dark:to-neutral-950'>
           <Grid size={20} />
-          <div className='relative z-20 mb-4 w-full'>
-            <label
-              className='mb-2 inline-block text-sm font-medium text-neutral-600 dark:text-neutral-300'
-              htmlFor='name'
+
+          {/* 成功 Toast */}
+          {success && (
+            <div className='fixed bottom-6 right-6 z-50 rounded-lg border border-green-500/30 bg-green-500/10 px-5 py-3 text-sm text-green-400 shadow-lg backdrop-blur-sm'>
+              感謝您的留言，我們會盡快回覆！
+            </div>
+          )}
+
+          {/* 一般錯誤 */}
+          {generalError && (
+            <div className='relative z-20 w-full rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400'>
+              {generalError}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className='relative z-20 w-full space-y-4'>
+            <div className='mb-4 w-full'>
+              <label
+                className='mb-2 inline-block text-sm font-medium text-neutral-600 dark:text-neutral-300'
+                htmlFor='name'
+              >
+                姓名
+              </label>
+              <input
+                id='name'
+                type='text'
+                value={form.name}
+                onChange={e => set('name', e.target.value)}
+                placeholder='請輸入您的姓名'
+                className='shadow-input h-10 w-full rounded-md border border-transparent bg-white pl-4 text-sm text-neutral-700 placeholder-neutral-500 outline-none focus:ring-2 focus:ring-neutral-800 focus:outline-none active:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white'
+              />
+              {errors.name && <p className='mt-1 text-xs text-red-400'>{errors.name[0]}</p>}
+            </div>
+            <div className='mb-4 w-full'>
+              <label
+                className='mb-2 inline-block text-sm font-medium text-neutral-600 dark:text-neutral-300'
+                htmlFor='email'
+              >
+                電子郵件
+              </label>
+              <input
+                id='email'
+                type='email'
+                value={form.email}
+                onChange={e => set('email', e.target.value)}
+                placeholder='請輸入您的電子郵件'
+                className='shadow-input h-10 w-full rounded-md border border-transparent bg-white pl-4 text-sm text-neutral-700 placeholder-neutral-500 outline-none focus:ring-2 focus:ring-neutral-800 focus:outline-none active:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white'
+              />
+              {errors.email && <p className='mt-1 text-xs text-red-400'>{errors.email[0]}</p>}
+            </div>
+            <div className='mb-4 w-full'>
+              <label
+                className='mb-2 inline-block text-sm font-medium text-neutral-600 dark:text-neutral-300'
+                htmlFor='company'
+              >
+                公司名稱
+              </label>
+              <input
+                id='company'
+                type='text'
+                value={form.company}
+                onChange={e => set('company', e.target.value)}
+                placeholder='請輸入您的公司名稱'
+                className='shadow-input h-10 w-full rounded-md border border-transparent bg-white pl-4 text-sm text-neutral-700 placeholder-neutral-500 outline-none focus:ring-2 focus:ring-neutral-800 focus:outline-none active:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white'
+              />
+              {errors.company && <p className='mt-1 text-xs text-red-400'>{errors.company[0]}</p>}
+            </div>
+            <div className='mb-4 w-full'>
+              <label
+                className='mb-2 inline-block text-sm font-medium text-neutral-600 dark:text-neutral-300'
+                htmlFor='message'
+              >
+                留言內容
+              </label>
+              <textarea
+                id='message'
+                rows={5}
+                value={form.message}
+                onChange={e => set('message', e.target.value)}
+                placeholder='請輸入您的留言內容'
+                className='shadow-input w-full rounded-md border border-transparent bg-white pt-4 pl-4 text-sm text-neutral-700 placeholder-neutral-500 outline-none focus:ring-2 focus:ring-neutral-800 focus:outline-none active:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white'
+              />
+              {errors.message && <p className='mt-1 text-xs text-red-400'>{errors.message[0]}</p>}
+            </div>
+            <button
+              type='submit'
+              disabled={submitting}
+              className='relative z-10 flex items-center justify-center rounded-md border border-transparent bg-neutral-800 px-4 py-2 text-sm font-medium text-white shadow-[0px_1px_0px_0px_#FFFFFF20_inset] transition duration-200 hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-60 md:text-sm'
             >
-              姓名
-            </label>
-            <input
-              id='name'
-              type='text'
-              placeholder='請輸入您的姓名'
-              className='shadow-input h-10 w-full rounded-md border border-transparent bg-white pl-4 text-sm text-neutral-700 placeholder-neutral-500 outline-none focus:ring-2 focus:ring-neutral-800 focus:outline-none active:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white'
-            />
-          </div>
-          <div className='relative z-20 mb-4 w-full'>
-            <label
-              className='mb-2 inline-block text-sm font-medium text-neutral-600 dark:text-neutral-300'
-              htmlFor='email'
-            >
-              電子郵件
-            </label>
-            <input
-              id='email'
-              type='email'
-              placeholder='請輸入您的電子郵件'
-              className='shadow-input h-10 w-full rounded-md border border-transparent bg-white pl-4 text-sm text-neutral-700 placeholder-neutral-500 outline-none focus:ring-2 focus:ring-neutral-800 focus:outline-none active:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white'
-            />
-          </div>
-          <div className='relative z-20 mb-4 w-full'>
-            <label
-              className='mb-2 inline-block text-sm font-medium text-neutral-600 dark:text-neutral-300'
-              htmlFor='company'
-            >
-              公司名稱
-            </label>
-            <input
-              id='company'
-              type='text'
-              placeholder='請輸入您的公司名稱'
-              className='shadow-input h-10 w-full rounded-md border border-transparent bg-white pl-4 text-sm text-neutral-700 placeholder-neutral-500 outline-none focus:ring-2 focus:ring-neutral-800 focus:outline-none active:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white'
-            />
-          </div>
-          <div className='relative z-20 mb-4 w-full'>
-            <label
-              className='mb-2 inline-block text-sm font-medium text-neutral-600 dark:text-neutral-300'
-              htmlFor='message'
-            >
-              留言內容
-            </label>
-            <textarea
-              id='message'
-              rows={5}
-              placeholder='請輸入您的留言內容'
-              className='shadow-input w-full rounded-md border border-transparent bg-white pt-4 pl-4 text-sm text-neutral-700 placeholder-neutral-500 outline-none focus:ring-2 focus:ring-neutral-800 focus:outline-none active:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white'
-            />
-          </div>
-          <button className='relative z-10 flex items-center justify-center rounded-md border border-transparent bg-neutral-800 px-4 py-2 text-sm font-medium text-white shadow-[0px_1px_0px_0px_#FFFFFF20_inset] transition duration-200 hover:bg-neutral-900 md:text-sm'>
-            送出
-          </button>
+              {submitting ? '送出中...' : '送出'}
+            </button>
+          </form>
         </div>
       </div>
     </div>

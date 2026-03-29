@@ -12,6 +12,7 @@ import type {
   ChangePasswordFormData,
   CurrentUser,
 } from '@/types/member';
+import type { UserRole } from '@/types/admin';
 import type {
   Product,
   ProductCategory,
@@ -153,6 +154,7 @@ interface AuthResponse {
     name: string;
     phone: string | null;
     address: string | null;
+    role: UserRole;
     created_at: string;
   };
 }
@@ -166,6 +168,7 @@ const transformUser = (user: AuthResponse['user']): CurrentUser => ({
   name: user.name,
   phone: user.phone || '',
   address: user.address || '',
+  role: user.role || 'user',
   loginAt: new Date().toISOString(),
 });
 

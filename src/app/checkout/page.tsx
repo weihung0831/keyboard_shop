@@ -11,6 +11,7 @@ import { IconX, IconAlertTriangle } from '@tabler/icons-react';
 import { OrderConfirmModal } from '@/components/ui/order-confirm-modal';
 import { apiCreateOrder, apiInitiatePayment } from '@/lib/api';
 import { openPaymentWindow } from '@/lib/payment-utils';
+import { useSettings } from '@/contexts/SettingsContext';
 import type { ShippingMethod } from '@/types/order';
 
 /**
@@ -28,36 +29,35 @@ interface ShippingInfo {
 /**
  * 運送方式選項
  */
-const SHIPPING_METHODS: {
-  id: ShippingMethod;
-  name: string;
-  description: string;
-  price: number;
-}[] = [
-  {
-    id: 'standard',
-    name: '標準宅配',
-    description: '3-5 個工作天送達',
-    price: 60,
-  },
-  {
-    id: 'express',
-    name: '快速宅配',
-    description: '1-2 個工作天送達',
-    price: 150,
-  },
-  {
-    id: 'store_pickup',
-    name: '門市取貨',
-    description: '3-5 個工作天送達，可至超商取貨',
-    price: 0,
-  },
-];
+function getShippingMethods(standardFee: number) {
+  return [
+    {
+      id: 'standard' as ShippingMethod,
+      name: '標準宅配',
+      description: '3-5 個工作天送達',
+      price: standardFee,
+    },
+    {
+      id: 'express' as ShippingMethod,
+      name: '快速宅配',
+      description: '1-2 個工作天送達',
+      price: Math.round(standardFee * 2.5),
+    },
+    {
+      id: 'store_pickup' as ShippingMethod,
+      name: '門市取貨',
+      description: '3-5 個工作天送達，可至超商取貨',
+      price: 0,
+    },
+  ];
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, totalItems, totalPrice, clearCart } = useCart();
   const { currentUser } = useAuth();
+  const { settings } = useSettings();
+  const SHIPPING_METHODS = getShippingMethods(settings.shipping_fee);
 
   // 表單狀態 - 如果已登入,自動帶入會員資料
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
@@ -161,9 +161,10 @@ export default function CheckoutPage() {
     );
   }
 
-  // 計算運費
+  // 計算運費（含免運門檻判斷）
   const shippingMethod = SHIPPING_METHODS.find(method => method.id === selectedShipping);
-  const shippingFee: number = shippingMethod?.price || 0;
+  const isFreeShipping = totalPrice >= settings.free_shipping_threshold;
+  const shippingFee: number = isFreeShipping ? 0 : shippingMethod?.price || 0;
   const finalTotal: number = totalPrice + shippingFee;
 
   // 表單欄位更新
@@ -269,17 +270,19 @@ export default function CheckoutPage() {
         console.error('無法存入 localStorage:', e);
       }
 
-      // 建立訂單後自動發起付款，跳轉綠界
-      try {
-        const paymentResult = await apiInitiatePayment(order.id);
-        if (openPaymentWindow(paymentResult.payment_html)) {
-          clearCart();
-          setShowConfirmModal(false);
-          router.push('/checkout/success');
-          return;
+      // 建立訂單後自動發起付款（僅在金流啟用時）
+      if (settings.ecpay_enabled) {
+        try {
+          const paymentResult = await apiInitiatePayment(order.id);
+          if (openPaymentWindow(paymentResult.payment_html)) {
+            clearCart();
+            setShowConfirmModal(false);
+            router.push('/checkout/success');
+            return;
+          }
+        } catch (payError) {
+          console.error('發起付款失敗，訂單已建立:', payError);
         }
-      } catch (payError) {
-        console.error('發起付款失敗，訂單已建立:', payError);
       }
 
       // 付款視窗開啟失敗或發起付款失敗：清空購物車，導向成功頁（可在訂單詳情重新付款）
