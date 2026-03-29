@@ -35,7 +35,7 @@ export interface Product {
   description: string;
   content: string | null;
   sku: string;
-  specifications: Record<string, string> | null;
+  specifications: Record<string, string> | { spec_name: string; spec_value: string }[] | null;
   price: number;
   original_price: number | null;
   stock: number;
