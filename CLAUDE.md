@@ -8,9 +8,11 @@
 # 前端 (Next.js 15)
 npm run dev                 # 開發伺服器 (Turbopack)
 npm run build               # 建置
+npm run start               # 啟動 production 伺服器
 npm run lint                # ESLint 檢查
 npm run lint:fix            # ESLint 自動修正
 npm run type-check          # TypeScript 型別檢查
+npm run format              # Prettier 格式化（寫入）
 npm run format:check        # Prettier 格式檢查
 
 # 後端 (Laravel 12) — 見 keyboard_shop_api 專案
@@ -27,10 +29,15 @@ npm run format:check        # Prettier 格式檢查
 ```
 src/                        # Next.js 前端
 ├── app/                    # App Router 頁面
+│   ├── about/              # 關於我們
 │   ├── admin/              # 後台管理頁面
 │   ├── checkout/           # 結帳頁面
+│   ├── contact/            # 聯絡我們
+│   ├── faq/                # 常見問題
+│   ├── login/              # 登入頁面
 │   ├── member/             # 會員中心頁面
-│   └── products/           # 商品頁面
+│   ├── products/           # 商品頁面
+│   └── register/           # 註冊頁面
 ├── components/             # React 元件
 │   ├── ui/                 # 共用 UI 元件
 │   ├── auth/               # 認證相關元件
@@ -43,6 +50,10 @@ src/                        # Next.js 前端
 │   └── WishlistContext.tsx  # 願望清單
 ├── data/                   # 靜態資料 (JSON)
 ├── hooks/                  # 自定義 Hooks
+│   ├── useAdminGuard.ts    # 後台權限守衛
+│   ├── useAuthGuard.ts     # 認證守衛
+│   ├── useOrders.ts        # 訂單相關邏輯
+│   └── use-outside-click.tsx # 點擊外部偵測
 ├── lib/                    # 工具函式 & API 服務
 │   ├── api.ts              # axios API 服務（所有後端請求）
 │   ├── admin-api.ts        # 後台管理 API 服務

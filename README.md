@@ -25,17 +25,18 @@
 
 ## 技術棧
 
-| 類別       | 技術                                     |
-| ---------- | ---------------------------------------- |
-| 框架       | Next.js 15 (App Router, Turbopack)       |
-| UI         | React 19 + TypeScript 5 + Tailwind CSS 4 |
-| HTTP       | axios                                    |
-| 動畫       | Motion (Framer Motion)                   |
-| 富文本     | Tiptap                                   |
-| 3D         | Three.js + React Three Fiber             |
-| 圖示       | Lucide React, Tabler Icons               |
-| 表單       | React Hook Form + Zod                    |
-| 程式碼品質 | ESLint + Prettier + husky + lint-staged  |
+| 類別       | 技術                                             |
+| ---------- | ------------------------------------------------ |
+| 框架       | Next.js 15 (App Router, Turbopack)               |
+| UI         | React 19 + TypeScript 5 + Tailwind CSS 4         |
+| HTTP       | axios                                            |
+| 動畫       | Motion (Framer Motion)                           |
+| 富文本     | Tiptap                                           |
+| 3D         | Three.js + React Three Fiber                     |
+| UI 工具    | class-variance-authority + clsx + tailwind-merge |
+| 圖示       | Lucide React, Tabler Icons, React Icons          |
+| 表單       | React Hook Form + Zod                            |
+| 程式碼品質 | ESLint + Prettier + husky + lint-staged          |
 
 ## 快速開始
 
@@ -65,8 +66,11 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ```bash
 npm run dev           # 啟動開發伺服器 (Turbopack)
 npm run build         # 正式環境建置
+npm run start         # 啟動 production 伺服器
 npm run lint          # ESLint 檢查
+npm run lint:fix      # ESLint 自動修正
 npm run type-check    # TypeScript 型別檢查
+npm run format        # Prettier 格式化（寫入）
 npm run format:check  # Prettier 格式檢查
 ```
 
@@ -84,6 +88,9 @@ src/
 │   │   ├── wishlist/       # 願望清單
 │   │   ├── profile/        # 個人資料
 │   │   └── change-password/# 修改密碼
+│   ├── about/              # 關於我們
+│   ├── contact/            # 聯絡我們
+│   ├── faq/                # 常見問題
 │   ├── login/              # 登入
 │   └── register/           # 註冊
 ├── components/             # React 元件
